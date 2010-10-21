@@ -24,21 +24,6 @@
 
 (in-package #:doors.com)
 
-(define-ole-iid iid-unknown #x00000000 #x0000 #x0000)
-
-(define-interface unknown (iid-unknown)
-  "Lisp wrapper for IUnknown inteface"
-  ;;Query interface is just a stub for now.
-  ;;See real method definition further.
-  ;;This is required because we do not support recursive types.
-  ;;And this is also one of the reasons for presence
-  ;;of DEFINE-INTERFACE-METHOD macro.
-  (query-interface (hresult)
-    (iid pointer)
-    (pout pointer :aux))
-  (add-ref (ulong))
-  (release (ulong)))
-
 (defun %error-no-interface (value)
   (declare (ignore value))
   (error 'windows-error :code error-no-interface))
@@ -49,14 +34,20 @@
 (defalias known-iid ()
   `(filtered iid %iid-known-p %error-no-interface))
 
-(define-interface-method unknown query-interface
-  (hresult rv
-    (translate-interface
-      (com-interface-pointer interface)
-      (find-interface-class-by-iid iid)
-      T))
-  (iid (& known-iid))
-  (interface (& unknown :out) :aux))
+(define-ole-iid iid-unknown #x00000000 #x0000 #x0000)
+
+(define-interface unknown (iid-unknown)
+  "Lisp wrapper for IUnknown inteface"
+  (query-interface
+    (hresult rv
+      (translate-interface
+        (com-interface-pointer interface)
+        (find-interface-class-by-iid iid)
+        T))
+    (iid (& known-iid))
+    (interface (& unknown :out) :aux))
+  (add-ref (ulong))
+  (release (ulong)))
 
 (defmethod shared-initialize :after
   ((object unknown) slot-names &rest initargs &key finalize &allow-other-keys)

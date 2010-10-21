@@ -224,17 +224,8 @@
                          (deref ,parent-vtable-name
                                 ',parent-vtable-name))))))
        ,@(loop :for vtable-index :from (length parent-methods)
-             :for (method-name . method-spec) :in methods
-             :for (method-def trampoline-def trampoline-name) =
-             (parse-method-spec
-               name                              
-               vtable-name
-               method-name
-               vtable-index
-               method-spec)
-             :collect method-def :into method-defs
-             :collect trampoline-def :into trampoline-defs
-             :finally (return (append method-defs trampoline-defs)))
+           :for method-spec :in methods :collect
+           `(define-interface-method ,name ,@method-spec))
        ',name))))
 
 (defmacro define-interface-method
