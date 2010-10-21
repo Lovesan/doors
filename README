@@ -1,0 +1,12 @@
+Doors is a lisper's gateway to Windows. It aims to cover only essential
+features of that operating system, such as basic WinAPI, COM and OLE.
+
+Here's the list of dependencies in no particular order:
+    * alexandria http://common-lisp.net/project/alexandria/
+    * trivial-features http://www.cliki.net/trivial-features
+    * virgil http://github.com/Lovesan/virgil
+        which, in turns, also depends on:
+        ** cffi http://common-lisp.net/project/cffi/
+        ** babel http://common-lisp.net/project/babel/
+    * trivial-garbage http://www.cliki.net/trivial-garbage
+    * closer-mop http://common-lisp.net/project/closer/closer-mop.html
