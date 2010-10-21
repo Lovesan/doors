@@ -31,7 +31,7 @@
 
 (define-interface vector-adder ()
   (add-vectors (void rv out)
-    (out (& float4 :inout :optional))
+    (out (& float4 :inout) :optional)
     (a (& float4))
     (b (& float4))))
 
@@ -42,21 +42,29 @@
                         &optional (out (float4 0.0 0.0 0.0 0.0)))
   (values void (map-into out #'+ a b) a b))
 
-(defun test-vector-adder ()
+(defun vector-adder-test ()
   (let* ((object (make-instance 'vector-adder-object))
-         (interface (acquire-interface object 'vector-adder nil))
+         (interface (acquire-interface object 'vector-adder t))
          (v1 (float4 1.0 2.0 3.0 4.0))
          (v2 (float4 5.0 6.0 7.0 8.0)))
+    (finalize interface (lambda ()
+                          (write-line "ADDER interface disposing"
+                                      *error-output*)))
+    (finalize object (lambda ()
+                       (write-line "ADDER-OBJECT object disposing"
+                                   *error-output*)))
     (add-vectors interface v1 v2 v1)
-    (equal (add-vectors interface v1 v2)
-           #(11.0 14.0 17.0 20.0))))
+    (every (complement #'null)
+           (map 'vector #'=
+             (add-vectors interface v1 v2)
+             #(11.0 14.0 17.0 20.0)))))
 
 (define-iid iid-stack
     #xCAFEBABE #xF001 #xBABE 0 0 0 0 #x0B #xAD #xF0 #x0D)
 
 (define-interface stack (iid-stack unknown)
   (stack-push (void) (value int))
-  (stack-pop  (hresult) (value (& int :out) :aux)))
+  (stack-pop  (hresult rv value) (value (& int :out) :aux)))
 
 (defclass stack-object (com-object)
   ((stack :initform '()
@@ -69,16 +77,24 @@
 (defmethod stack-pop ((object stack-object))
   (if (endp (stack-object-stack object))
     (error 'windows-error)
-    (values nil (pop (stack-object-stack)))))
+    (values nil (pop (stack-object-stack object)))))
 
 (defun stack-test ()
-  (let ((object (make-instance 'stack-object))
-        (unknown (acquire-interface object 'unknown t))
-        (interface (query-interface unknown 'stack)))
-    (stack-push interface 123)
-    (and (= 123 (stack-pop interface))
-         (handler-case
-             (progn (stack-pop interface) nil)
-           (error (e) (and (typep e 'windows-error)
-                           (= (windows-error-code e)
-                              error-failure)))))))
+  (let* ((object (make-instance 'stack-object)))
+    (with-interfaces ((unknown (acquire-interface object 'unknown))
+                      (stack (query-interface unknown iid-stack)))
+      (add-ref stack)
+      (finalize stack (lambda ()
+                        (write-line "STACK interface disposing"
+                                    *error-output*)))
+      (finalize object (lambda ()
+                         (write-line "STACK-OBJECT object disposing"
+                                     *error-output*)))
+      (stack-push stack 123)
+      (and (eql 123 (stack-pop stack))
+           (handler-case
+               (progn (stack-pop stack) nil)
+             (error (error)
+               (and (typep error 'windows-error)
+                    (= (windows-error-code error)
+                       error-failure))))))))

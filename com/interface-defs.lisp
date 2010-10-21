@@ -144,7 +144,7 @@
                              `(handler-case
                                   ,body
                                 (windows-error (,condition) ,condition)
-                                (error (e) (make-condition 'windows-error
+                                (error () (make-condition 'windows-error
                                              :code error-unexpected-failure)))
                              body)))
                       (setf (deref ,vtable-name 'pointer ,(* vtable-index (sizeof '*)))

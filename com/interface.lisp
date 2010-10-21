@@ -52,7 +52,9 @@
   t)
   
 (closer-mop:defclass com-interface ()
-  ((com-pointer :initform &0 :initarg :pointer))
+  ((com-pointer :initform &0 :initarg :pointer)
+   (finalize :initarg :finalize :allocation :class
+             :initform nil))
   (:metaclass com-interface-class))
   
 (closer-mop:finalize-inheritance (find-class 'com-interface-class))

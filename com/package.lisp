@@ -48,6 +48,8 @@
     #:iid-unknown
     #:unknown
     #:query-interface
+    #:add-ref
+    #:release
     #:known-iid
     #:with-interface
     #:with-interfaces

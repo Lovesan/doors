@@ -62,6 +62,9 @@
                               pointer)
                         pointer)))
          (interface (translate-interface pointer class finalize)))
+    (when (and finalize (not (subtypep (class-name class)
+                                       'unknown)))
+      (finalize interface (lambda () (release object))))
     (add-ref object)
     interface))
 
