@@ -36,7 +36,11 @@
 (define-foreign-library ws2-32
   (T (:default "ws2_32")))
 
+(define-foreign-library advapi32
+  (T (:default "advapi32")))
+
 (use-foreign-library kernel32)
 (use-foreign-library user32)
 (use-foreign-library gdi32)
 (use-foreign-library ws2-32)
+(use-foreign-library advapi32)

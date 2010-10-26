@@ -196,8 +196,7 @@
                                        method-name))
                              methods))
            (parent-vtable-name (when parent
-                                 (com-interface-class-vtable-name parent)))
-           (vtable-size (+ (length parent-methods) (length direct-methods))))
+                                 (com-interface-class-vtable-name parent))))
       `(progn
          (eval-when (:compile-toplevel :load-toplevel :execute)
            ,@(multiple-value-bind
@@ -206,7 +205,8 @@
                   ()
                   (:metaclass com-interface-class)
                   (:vtable-name . ,vtable-name)
-                  (:methods ,@parent-methods ,@direct-methods))
+                  (:methods ,@parent-methods ,@direct-methods)
+                  ,@(when doc `((:documentation ,doc))))
                 (closer-mop:finalize-inheritance (find-class ',name))
                 ,form
                 (setf (slot-value (find-class ',name) 'iid) ,iid-name)
@@ -223,8 +223,7 @@
                                 ',parent-vtable-name)
                          (deref ,parent-vtable-name
                                 ',parent-vtable-name))))))
-       ,@(loop :for vtable-index :from (length parent-methods)
-           :for method-spec :in methods :collect
+       ,@(loop :for method-spec :in methods :collect
            `(define-interface-method ,name ,@method-spec))
        ',name))))
 

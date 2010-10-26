@@ -54,8 +54,9 @@
   (:workstation #x00000001))
 
 (define-struct (os-version-info-ex
+                 (:constructor os-version-info-ex ())
                  (:conc-name osverinfo-))
-  (size dword)
+  (size dword :initform (sizeof 'os-version-info-ex))
   (major-version dword)
   (minor-version dword)
   (build-number dword)
@@ -70,43 +71,48 @@
 (define-external-function
     ("GetVersion" (:camel-case))
     (:stdcall kernel32)
-  ((last-error dword not-zero)))
+  (dword rv (if (zerop rv)
+              (error "Error requesting Windows version")
+              rv)))
 
 (load-time-value
-  (defconstant winnt-version  (get-version)))
+  (defconstant winnt-version (let ((v (get-version)))
+                               (logior (high-byte (low-word v))
+                                       (ash (low-byte (low-word v)) 8)))))
 
 (define-external-function
     (#+doors.unicode "GetVersionExW"
      #-doors.unicode "GetVersionExA"
                  get-version-ex)
     (:stdcall kernel32)
-  ((last-error boolean) rv version-info)
+  (boolean rv (if rv
+                version-info
+                (error "Error requesting Windows NT version")))
   (version-info (& os-version-info-ex :inout)
-                :aux
-                (make-os-version-info-ex
-                  :size (sizeof 'os-version-info-ex))))
+                :aux (os-version-info-ex)))
 
 (let ((info (get-version-ex)))
-  (pushnew (case (osverinfo-major-version info)
-             (5 (case (osverinfo-minor-version info)
-                  (0 :win2000)
-                  (1 :winxp)
-                  (2 (cond
-                       ((eq (osverinfo-product-type info) :workstation)
-                        :winxp64)
-                       ((/= 0 (logand (osverinfo-suite-mask info)
-                                      ver-suite-home-server))
-                        :winhomeserver)
-                       (T :winserver2003)))))
-             (6 (case (osverinfo-minor-version info)
-                  (0 (if (eq (osverinfo-product-type info)
-                             :workstation)
-                       :winvista
-                       :winserver2008))
-                  (1 (if (eq (osverinfo-product-type info)
-                             :workstation)
-                       :win7
-                       :winserver2008r2))
-                  (T :windows)))
-             (T :windows))
-           *features*))
+  (when info
+    (pushnew (case (osverinfo-major-version info)
+               (5 (case (osverinfo-minor-version info)
+                    (0 :win2000)
+                    (1 :winxp)
+                    (2 (cond
+                         ((eq (osverinfo-product-type info) :workstation)
+                          :winxp64)
+                         ((/= 0 (logand (osverinfo-suite-mask info)
+                                        ver-suite-home-server))
+                          :winhomeserver)
+                         (T :winserver2003)))))
+               (6 (case (osverinfo-minor-version info)
+                    (0 (if (eq (osverinfo-product-type info)
+                               :workstation)
+                         :winvista
+                         :winserver2008))
+                    (1 (if (eq (osverinfo-product-type info)
+                               :workstation)
+                         :win7
+                         :winserver2008r2))
+                    (T :windows)))
+               (T (error "Unsupported system")))
+             *features*)))

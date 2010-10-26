@@ -113,3 +113,140 @@
 
 (defalias last-error (type &optional (predicate 'not-null))
   `(filtered ,type ,predicate %last-error))
+
+(define-external-function "Beep"
+    (:stdcall kernel32)
+  ((last-error boolean))
+  (frequency dword)
+  (duration dword))
+
+#-win2000
+(define-external-function
+    ("CaptureStackBackTrace" (:camel-case))
+    (:stdcall kernel32)
+  (ushort rv (values (subseq backtrace 0 rv)
+                     back-trace-hash))
+  (frames-to-skil ulong)
+  (frames-to-capture ulong)
+  (backtrace (& (simple-array pointer) :out)
+             :aux (make-array frames-to-capture))
+  (back-trace-hash (& ulong :out) :aux))
+
+(define-external-function
+    (#+doors.unicode "FatalAppExitW"
+     #-doors.unicode "FatalAppExitA"
+                   fatal-app-exit)
+    (:stdcall kernel32)
+  (void)
+  (action uint :aux 0)
+  (message-text (& tstring)))
+
+(define-external-function
+    ("FlashWindow" (:camel-case))
+    (:stdcall user32)
+  (boolean)
+  (hwnd handle)
+  (invert boolean))
+
+(define-enum (flash-window-flags
+               (:conc-name flashw-))
+  (:stop 0)
+  (:caption 1)
+  (:tray 2)
+  (:all 3)
+  (:timer 4)
+  (:timer-no-fg #xC))
+
+(define-struct (flash-window-info
+                 (:conc-name flash-window-)
+                 (:constructor flash-window-info
+                               (&key hwnd flags count timeout)))
+  (size uint :initform (sizeof 'flash-window-info))
+  (hwnd handle)
+  (flags flash-window-flags)
+  (count uint)
+  (timeout dword))
+
+(define-external-function
+    ("FlashWindowEx")
+    (:stdcall user32)
+  (boolean)
+  (fwinfo (& flash-window-info)))
+
+(define-enum (format-message-flags
+               (:base-type dword)
+               (:conc-name format-message-))
+  (:allocate-buffer #x00000100)
+  (:argument-array  #x00002000)
+  (:from-module     #x00000800)
+  (:from-string     #x00000400)
+  (:from-system     #x00001000)
+  (:ignore-inserts  #x00000200)  
+  (:max-width-mask  #x000000FF))
+
+(define-external-function
+    (#+doors.unicode "FormatMessageW"
+     #-doors.unicode "FormatMessageA"
+                   format-message)
+    (:stdcall kernel32)
+  ((last-error dword not-zero))
+  (flags format-message-flags)
+  (source pointer :key)
+  (message-id dword :key)
+  (language-id dword :key 0)
+  (buffer pointer)
+  (size dword :key)
+  (arguments pointer :key))
+
+(define-enum (system-error-mode
+               (:conc-name sem-)
+               (:base-type uint))
+  (:fail-critical-errors 1)
+  (:no-alignment-fault-exception 4)
+  (:no-page-fault-error-box 2)
+  (:no-open-file-error-box #x8000))
+
+#-(or :win2000 :winxp :winx64 :winserver2003 :winhomeserver)
+(define-external-function
+    ("GetErrorMode" (:camel-case))
+    (:stdcall kernel32)
+  (system-error-mode))
+
+#-(or :win2000 :winxp :winx64 :winserver2003 :winhomeserver :winvista
+      :winserver2008)
+(define-external-function
+    ("GetThreadErrorMode" (:camel-case))
+    (:stdcall kernel32)
+  (system-error-mode))
+
+(define-external-function
+    ("MessageBeep" (:camel-case))
+    (:stdcall user32)
+  ((last-error boolean))
+  (type (enum (:base-type uint)
+              (:simple #xFFFFFFFF)
+              (:asterisk #x40)
+              (:exclamation #x30)
+              (:error #x10)
+              (:hand #x10)
+              (:information #x40)
+              (:question #x20)
+              (:stop #x10)
+              (:warning #x30)
+              (:ok 0))
+        :optional :simple))
+
+#-(or :win2000 :winxp :winx64 :winserver2003 :winhomeserver)
+(define-external-function
+    ("SetErrorMode" (:camel-case))
+    (:stdcall kernel32)
+  (system-error-mode)
+  (system-error-mode))
+
+#-(or :win2000 :winxp :winx64 :winserver2003 :winhomeserver
+      :winvista :winserver2008)
+(define-external-function
+    ("SetThreadErrorMode" (:camel-case))
+    (:stdcall kernel32)
+  (system-error-mode)
+  (system-error-mode))

@@ -26,10 +26,14 @@
 
 (declaim (inline uuid uuid-dw uuid-w1 uuid-w2
                  uuid-b1 uuid-b2 uuid-b3 uuid-b4
-                 uuid-b5 uuid-b6 uuid-b7 uuid-b8))
+                 uuid-b5 uuid-b6 uuid-b7 uuid-b8
+                 %uuid-reader %uuid-writer %uuid-cleaner))
 (define-struct
     (uuid
       (:constructor uuid (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8))
+      (:cleaner %uuid-cleaner)
+      (:reader %uuid-reader)
+      (:writer %uuid-writer)
       (:print-object (lambda (object stream)
                        (print-unreadable-object (object stream :type t)
                          (with-accessors
@@ -66,6 +70,44 @@
        (the uuid ,uuid)
      ,@body))
 
+(defun %uuid-reader (p o)
+  (declare (type pointer p))
+  (let ((out (or o (uuid 0 0 0 0 0 0 0 0 0 0 0))))
+    (declare (type uuid out))
+    (with-uuid-accessors
+        (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8) out
+      (setf dw (deref p 'dword (offsetof 'uuid 'dw))
+            w1 (deref p 'word (offsetof 'uuid 'w1))
+            w2 (deref p 'word (offsetof 'uuid 'w2))
+            b1 (deref p 'byte (offsetof 'uuid 'b1))
+            b2 (deref p 'byte (offsetof 'uuid 'b2))
+            b3 (deref p 'byte (offsetof 'uuid 'b3))
+            b4 (deref p 'byte (offsetof 'uuid 'b4))
+            b5 (deref p 'byte (offsetof 'uuid 'b5))
+            b6 (deref p 'byte (offsetof 'uuid 'b6))
+            b7 (deref p 'byte (offsetof 'uuid 'b7))
+            b8 (deref p 'byte (offsetof 'uuid 'b8)))
+      out)))
+(defun %uuid-writer (v p)
+  (declare (type pointer p) (type uuid v))
+  (with-uuid-accessors
+      (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8) v
+    (setf (deref p 'dword (offsetof 'uuid 'dw)) dw
+          (deref p 'word (offsetof 'uuid 'w1)) w1
+          (deref p 'word (offsetof 'uuid 'w2)) w2
+          (deref p 'byte (offsetof 'uuid 'b1)) b1
+          (deref p 'byte (offsetof 'uuid 'b2)) b2
+          (deref p 'byte (offsetof 'uuid 'b3)) b3
+          (deref p 'byte (offsetof 'uuid 'b4)) b4
+          (deref p 'byte (offsetof 'uuid 'b5)) b5
+          (deref p 'byte (offsetof 'uuid 'b6)) b6
+          (deref p 'byte (offsetof 'uuid 'b7)) b7
+          (deref p 'byte (offsetof 'uuid 'b8)) b8)
+    v))
+(defun %uuid-cleaner (p v)
+  (declare (ignore p v))
+  nil)
+
 (declaim (inline uuid-equal))
 (defun uuid-equal (uuid1 uuid2)
   (declare (type uuid uuid1 uuid2))
@@ -85,8 +127,12 @@
 
 (declaim (inline guid    guid-dw guid-w1 guid-w2
                  guid-b1 guid-b2 guid-b3 guid-b4
-                 guid-b5 guid-b6 guid-b7 guid-b8))
+                 guid-b5 guid-b6 guid-b7 guid-b8
+                 %guid-reader))
 (define-struct (guid (:include uuid)
+                     (:cleaner %uuid-cleaner)
+                     (:reader %guid-reader)
+                     (:writer %uuid-writer)
                      (:constructor guid (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8))))
 
 (defmacro with-guid-accessors ((dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8)
@@ -98,6 +144,25 @@
        (the guid ,guid)
      ,@body))
 
+(defun %guid-reader (p o)
+  (declare (type pointer p))
+  (let ((out (or o (guid 0 0 0 0 0 0 0 0 0 0 0))))
+    (declare (type guid out))
+    (with-uuid-accessors
+        (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8) out
+      (setf dw (deref p 'dword (offsetof 'uuid 'dw))
+            w1 (deref p 'word (offsetof 'uuid 'w1))
+            w2 (deref p 'word (offsetof 'uuid 'w2))
+            b1 (deref p 'byte (offsetof 'uuid 'b1))
+            b2 (deref p 'byte (offsetof 'uuid 'b2))
+            b3 (deref p 'byte (offsetof 'uuid 'b3))
+            b4 (deref p 'byte (offsetof 'uuid 'b4))
+            b5 (deref p 'byte (offsetof 'uuid 'b5))
+            b6 (deref p 'byte (offsetof 'uuid 'b6))
+            b7 (deref p 'byte (offsetof 'uuid 'b7))
+            b8 (deref p 'byte (offsetof 'uuid 'b8)))
+      out)))
+
 (declaim (inline guid-equal))
 (defun guid-equal (guid1 guid2)
   (declare (type guid guid1 guid2))
@@ -105,8 +170,12 @@
 
 (declaim (inline iid    iid-dw iid-w1 iid-w2
                  iid-b1 iid-b2 iid-b3 iid-b4
-                 iid-b5 iid-b6 iid-b7 iid-b8))
+                 iid-b5 iid-b6 iid-b7 iid-b8
+                 %iid-reader))
 (define-struct (iid (:include guid)
+                    (:cleaner %uuid-cleaner)
+                    (:reader %iid-reader)
+                    (:writer %uuid-writer)
                     (:constructor iid (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8))))
 
 (defmacro with-iid-accessors ((dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8)
@@ -118,6 +187,25 @@
        (the iid ,iid)
      ,@body))
 
+(defun %iid-reader (p o)
+  (declare (type pointer p))
+  (let ((out (or o (iid 0 0 0 0 0 0 0 0 0 0 0))))
+    (declare (type iid out))
+    (with-uuid-accessors
+        (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8) out
+      (setf dw (deref p 'dword (offsetof 'uuid 'dw))
+            w1 (deref p 'word (offsetof 'uuid 'w1))
+            w2 (deref p 'word (offsetof 'uuid 'w2))
+            b1 (deref p 'byte (offsetof 'uuid 'b1))
+            b2 (deref p 'byte (offsetof 'uuid 'b2))
+            b3 (deref p 'byte (offsetof 'uuid 'b3))
+            b4 (deref p 'byte (offsetof 'uuid 'b4))
+            b5 (deref p 'byte (offsetof 'uuid 'b5))
+            b6 (deref p 'byte (offsetof 'uuid 'b6))
+            b7 (deref p 'byte (offsetof 'uuid 'b7))
+            b8 (deref p 'byte (offsetof 'uuid 'b8)))
+      out)))
+
 (declaim (inline iid-equal))
 (defun iid-equal (iid1 iid2)
   (declare (type iid iid1 iid2))
@@ -125,8 +213,12 @@
 
 (declaim (inline clsid    clsid-dw clsid-w1 clsid-w2
                  clsid-b1 clsid-b2 clsid-b3 clsid-b4
-                 clsid-b5 clsid-b6 clsid-b7 clsid-b8))
+                 clsid-b5 clsid-b6 clsid-b7 clsid-b8
+                 %clsid-reader))
 (define-struct (clsid (:include guid)
+                      (:cleaner %uuid-cleaner)
+                      (:reader %clsid-reader)
+                      (:writer %uuid-writer)
                       (:constructor clsid (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8))))
 
 (defmacro with-clsid-accessors ((dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8)
@@ -138,6 +230,25 @@
        (the clsid ,clsid)
      ,@body))
 
+(defun %clsid-reader (p o)
+  (declare (type pointer p))
+  (let ((out (or o (clsid 0 0 0 0 0 0 0 0 0 0 0))))
+    (declare (type clsid out))
+    (with-uuid-accessors
+        (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8) out
+      (setf dw (deref p 'dword (offsetof 'uuid 'dw))
+            w1 (deref p 'word (offsetof 'uuid 'w1))
+            w2 (deref p 'word (offsetof 'uuid 'w2))
+            b1 (deref p 'byte (offsetof 'uuid 'b1))
+            b2 (deref p 'byte (offsetof 'uuid 'b2))
+            b3 (deref p 'byte (offsetof 'uuid 'b3))
+            b4 (deref p 'byte (offsetof 'uuid 'b4))
+            b5 (deref p 'byte (offsetof 'uuid 'b5))
+            b6 (deref p 'byte (offsetof 'uuid 'b6))
+            b7 (deref p 'byte (offsetof 'uuid 'b7))
+            b8 (deref p 'byte (offsetof 'uuid 'b8)))
+      out)))
+
 (declaim (inline clsid-equal))
 (defun clsid-equal (clsid1 clsid2)
   (declare (type clsid clsid1 clsid2))
@@ -145,8 +256,12 @@
 
 (declaim (inline fmtid    fmtid-dw fmtid-w1 fmtid-w2
                  fmtid-b1 fmtid-b2 fmtid-b3 fmtid-b4
-                 fmtid-b5 fmtid-b6 fmtid-b7 fmtid-b8))
+                 fmtid-b5 fmtid-b6 fmtid-b7 fmtid-b8
+                 %fmtid-reader))
 (define-struct (fmtid (:include guid)
+                      (:cleaner %uuid-cleaner)
+                      (:reader %fmtid-reader)
+                      (:writer %uuid-writer)
                       (:constructor fmtid (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8))))
 
 (defmacro with-fmtid-accessors ((dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8)
@@ -157,6 +272,25 @@
                     (,b5 fmtid-b5) (,b6 fmtid-b6) (,b7 fmtid-b7) (,b8 fmtid-b8))
        (the fmtid ,fmtid)
      ,@body))
+
+(defun %fmtid-reader (p o)
+  (declare (type pointer p))
+  (let ((out (or o (fmtid 0 0 0 0 0 0 0 0 0 0 0))))
+    (declare (type fmtid out))
+    (with-uuid-accessors
+        (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8) out
+      (setf dw (deref p 'dword (offsetof 'uuid 'dw))
+            w1 (deref p 'word (offsetof 'uuid 'w1))
+            w2 (deref p 'word (offsetof 'uuid 'w2))
+            b1 (deref p 'byte (offsetof 'uuid 'b1))
+            b2 (deref p 'byte (offsetof 'uuid 'b2))
+            b3 (deref p 'byte (offsetof 'uuid 'b3))
+            b4 (deref p 'byte (offsetof 'uuid 'b4))
+            b5 (deref p 'byte (offsetof 'uuid 'b5))
+            b6 (deref p 'byte (offsetof 'uuid 'b6))
+            b7 (deref p 'byte (offsetof 'uuid 'b7))
+            b8 (deref p 'byte (offsetof 'uuid 'b8)))
+      out)))
 
 (declaim (inline fmtid-equal))
 (defun fmtid-equal (fmtid1 fmtid2)

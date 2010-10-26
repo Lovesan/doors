@@ -1,3 +1,6 @@
+v0.1.0
+    * Bingings to console subsystem
+
 v0.0.3
     * Interface methods in interface definition can now refer to
         that interface type.

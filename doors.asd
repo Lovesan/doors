@@ -23,26 +23,26 @@
 ;;; DEALINGS IN THE SOFTWARE.
 
 (asdf:defsystem #:doors
-  :version "0.0.3"
+  :version "0.1.0"
   :description "Doors, a lisper's gateway to Windows"
   :author "Dmitry Ignatiev <lovesan.ru@gmail.com>"
   :maintainer "Dmitry Ignatiev <lovesan.ru@gmail.com>"
   :licence "MIT"
   :depends-on (#:trivial-features #:alexandria #:virgil #:trivial-garbage #:closer-mop)
   :serial t
-  :components ((:module "winapi"
+  :components ((:module "system"
                         :serial t
                         :components ((:file "package")
                                      (:file "libraries")
                                      (:file "features")
                                      (:file "wintypes")
-                                     (:file "hresult")
-                                     (:file "winerror")
                                      (:file "osversion")
+                                     (:file "hresult")
+                                     (:file "errors")
                                      (:file "uuid")
-                                     (:file "winnt")
-                                     (:file "winbase")
-                                     ))
+                                     (:file "security")
+                                     (:file "console")
+                                     ))               
                (:module "com"
                         :serial t
                         :components ((:file "package")
