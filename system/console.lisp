@@ -651,7 +651,7 @@
   (console-input handle :optional (std-handle :input-handle))
   (buffer (& tstring :out))
   (number-of-chars-to-read dword)
-  (chars-readen (& dword) :aux)
+  (chars-readen (& dword :out) :aux)
   #+doors.unicode
   (input-control (& console-read-control :in t) :optional void)
   #-doors.unicode
@@ -667,7 +667,7 @@
   (console-input handle :optional (std-handle :input-handle))
   (buffer (& (array input-record) :out))
   (length dword :optional (array-total-size buffer))
-  (n (& dword) :aux))
+  (n (& dword :out) :aux))
 
 (define-external-function
     (#+doors.unicode "ReadConsoleOutputW"
