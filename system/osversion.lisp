@@ -25,6 +25,7 @@
 (in-package #:doors)
 
 (define-enum (version-suite (:conc-name ver-suite-)
+                            (:list t)
                             (:base-type word))
   (:backoffice #x00000004)
   (:blade #x00000400)
@@ -48,6 +49,7 @@
 
 (define-enum (version-product-type
                (:conc-name ver-nt-)
+               (:list t)
                (:base-type byte))
   (:domain-controller #x00000002)
   (:server #x00000003)
@@ -64,26 +66,28 @@
   (csd-version (tstring 128))
   (service-pack-major word)
   (service-pack-minor word)
-  (suite-mask word)
+  (suite-mask version-suite)
   (product-type version-product-type)
   (reserved byte))
 
 (define-external-function
-    ("GetVersion" (:camel-case))
+    ("GetVersion" os-version)
     (:stdcall kernel32)
   (dword rv (if (zerop rv)
               (error "Error requesting Windows version")
               rv)))
 
+(define-symbol-macro os-version (os-version))
+
 (load-time-value
-  (defconstant winnt-version (let ((v (get-version)))
+  (defconstant winnt-version (let ((v os-version))
                                (logior (high-byte (low-word v))
                                        (ash (low-byte (low-word v)) 8)))))
 
 (define-external-function
     (#+doors.unicode "GetVersionExW"
      #-doors.unicode "GetVersionExA"
-                 get-version-ex)
+                 os-version-ex)
     (:stdcall kernel32)
   (boolean rv (if rv
                 version-info
@@ -91,7 +95,9 @@
   (version-info (& os-version-info-ex :inout)
                 :aux (os-version-info-ex)))
 
-(let ((info (get-version-ex)))
+(define-symbol-macro os-version-ex (os-version-ex))
+
+(let ((info os-version-ex))
   (when info
     (pushnew (case (osverinfo-major-version info)
                (5 (case (osverinfo-minor-version info)
@@ -100,8 +106,7 @@
                     (2 (cond
                          ((eq (osverinfo-product-type info) :workstation)
                           :winxp64)
-                         ((/= 0 (logand (osverinfo-suite-mask info)
-                                        ver-suite-home-server))
+                         ((member :home-server (osverinfo-suite-mask info))
                           :winhomeserver)
                          (T :winserver2003)))))
                (6 (case (osverinfo-minor-version info)

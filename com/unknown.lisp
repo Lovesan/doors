@@ -34,7 +34,9 @@
 (defalias known-iid ()
   `(filtered iid %iid-known-p %error-no-interface))
 
-(define-ole-iid iid-unknown #x00000000 #x0000 #x0000)
+(define-guid iid-unknown
+  #x00000000 #x0000 #x0000
+  #xC0 #x00 #x00 #x00 #x00 #x00 #x00 #x46)
 
 (define-interface unknown (iid-unknown)
   "Lisp wrapper for IUnknown inteface"

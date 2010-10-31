@@ -24,6 +24,9 @@
 
 (in-package #:doors)
 
+(define-foreign-library ntdll
+  (T (:default "ntdll")))
+
 (define-foreign-library kernel32
   (T (:default "kernel32")))
 
@@ -39,6 +42,7 @@
 (define-foreign-library advapi32
   (T (:default "advapi32")))
 
+(use-foreign-library ntdll)
 (use-foreign-library kernel32)
 (use-foreign-library user32)
 (use-foreign-library gdi32)

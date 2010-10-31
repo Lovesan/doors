@@ -1,3 +1,29 @@
+v0.2.0
+    * UUID, CLSID, FMTID and IID types have been redefined as and aliases for
+        GUID. Also, removed all related stuff, such as their accessors and so
+        on. Use GUID stuff
+    * CLSID and IID symbols now belong to DOORS.COM package
+    * Names of external functions were lispified even more:
+        ** Every function name that has a "Get" prefix is translated by
+            removing that prefix
+        ** Every function name that has a "Set" prefix is translated by
+            removing that prefix and forming a (SETF name) function name
+        ** For every function which name has a "Get" or "Set" prefix and which
+            either has no parameters at all or all parameters of which are
+            either optional or keyword there is also a corresponding
+            symbol macro.
+        ** Every function name that has a "Query" prefix and for which there
+            exists a corresponding setter (a function which name begins with
+            "Set") is translated as a name that has a "Get" prefix.
+        Example: "GetConsoleMode" ==> CONSOLE-MODE
+                 "SetConsoleMode" ==> (SETF CONSOLE-MODE)
+                    + CONSOLE-MODE symbol macro
+    * Most enums were converted to Virgil's strongly typed enums
+    * Security stuff has been moved from #:DOORS package into #:DOORS.SECURITY
+        package
+    * Added "pascal string" type
+    * Added more system stuff(handle, process and dll stuff)
+
 v0.1.1
     * bug fix: Fixed return value processing in READ-CONSOLE and
         READ-CONSOLE-INPUT functions

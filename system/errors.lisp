@@ -52,6 +52,8 @@
      "Invalid pointer")
    (invalid-handle #x80070006
      "Invalid handle")
+   (insufficient-buffer #x8007007A
+     "The data area passed to a system call is too small")
    (abort #x80004004
      "Operation aborted")
    (failure #x80004005
@@ -79,29 +81,31 @@
   (declare (type dword code))
   (not (logbitp 29 code)))
 
-(define-external-function ("GetLastError" (:camel-case))
+(define-external-function ("GetLastError" last-error)
     (:stdcall kernel32)
   (dword))
 
-(define-external-function ("SetLastError" (:camel-case))
+(define-external-function ("SetLastError" (setf last-error))
     (:stdcall kernel32)
-  (void)
+  (void rv error-code)
   (error-code dword))
 
-(defun last-error (&optional (error-if-no-error T) default-value)
-  (let ((last-error (get-last-error)))
-    (if (system-error-code-p last-error)
-      (let ((result (hresult-from-win32 last-error)))
+(define-symbol-macro last-error (last-error))
+
+(defun invoke-last-error (&optional (error-if-no-error T) default-value)
+  (let ((last-error-code last-error))
+    (if (system-error-code-p last-error-code)
+      (let ((result (hresult-from-win32 last-error-code)))
         (if (hresult-error-p result)
           (error 'windows-error :code result)
           (if error-if-no-error
             (error 'windows-error :code error-failure)
             default-value)))
-      (error 'non-system-error :code last-error))))
+      (error 'non-system-error :code last-error-code))))
 
-(defun %last-error (value)
+(defun %invoke-last-error (value)
   (declare (ignore value))
-  (last-error))
+  (invoke-last-error))
 
 (declaim (inline not-null))
 (defun not-null (x)
@@ -112,7 +116,7 @@
   (not (zerop x)))
 
 (defalias last-error (type &optional (predicate 'not-null))
-  `(filtered ,type ,predicate %last-error))
+  `(filtered ,type ,predicate %invoke-last-error))
 
 (define-external-function "Beep"
     (:stdcall kernel32)
@@ -168,7 +172,7 @@
   (timeout dword))
 
 (define-external-function
-    ("FlashWindowEx")
+    ("FlashWindowEx" (:camel-case))
     (:stdcall user32)
   (boolean)
   (fwinfo (& flash-window-info)))
@@ -208,16 +212,34 @@
 
 #-(or :win2000 :winxp :winx64 :winserver2003 :winhomeserver)
 (define-external-function
-    ("GetErrorMode" (:camel-case))
+    ("GetErrorMode" error-mode)
     (:stdcall kernel32)
   (system-error-mode))
 
 #-(or :win2000 :winxp :winx64 :winserver2003 :winhomeserver :winvista
       :winserver2008)
 (define-external-function
-    ("GetThreadErrorMode" (:camel-case))
+    ("GetThreadErrorMode" thread-error-mode)
     (:stdcall kernel32)
   (system-error-mode))
+
+#-(or :win2000 :winxp :winx64 :winserver2003 :winhomeserver)
+(define-external-function
+    ("SetErrorMode" (setf error-mode))
+    (:stdcall kernel32)
+  (system-error-mode)
+  (system-error-mode))
+
+#-(or :win2000 :winxp :winx64 :winserver2003 :winhomeserver
+      :winvista :winserver2008)
+(define-external-function
+    ("SetThreadErrorMode" (setf thread-error-mode))
+    (:stdcall kernel32)
+  (system-error-mode)
+  (system-error-mode))
+
+(define-symbol-macro error-mode (error-mode))
+(define-symbol-macro thread-error-mode (thread-error-mode))
 
 (define-external-function
     ("MessageBeep" (:camel-case))
@@ -235,18 +257,3 @@
               (:warning #x30)
               (:ok 0))
         :optional :simple))
-
-#-(or :win2000 :winxp :winx64 :winserver2003 :winhomeserver)
-(define-external-function
-    ("SetErrorMode" (:camel-case))
-    (:stdcall kernel32)
-  (system-error-mode)
-  (system-error-mode))
-
-#-(or :win2000 :winxp :winx64 :winserver2003 :winhomeserver
-      :winvista :winserver2008)
-(define-external-function
-    ("SetThreadErrorMode" (:camel-case))
-    (:stdcall kernel32)
-  (system-error-mode)
-  (system-error-mode))

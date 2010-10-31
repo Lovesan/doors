@@ -68,7 +68,7 @@
     (add-ref object)
     interface))
 
-(defmethod query-interface ((object com-object) (name uuid))
+(defmethod query-interface ((object com-object) (name guid))
   (values nil
           name
           (acquire-interface object (find-interface-class-by-iid name))))

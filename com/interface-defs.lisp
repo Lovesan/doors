@@ -162,7 +162,7 @@
     (cons (destructuring-bind
               (iid-name dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8) iid-name
             (values `(eval-when (:compile-toplevel :load-toplevel :execute)
-                       (define-iid ,iid-name ,dw ,w1 ,w2
+                       (define-guid ,iid-name ,dw ,w1 ,w2
                          ,b1 ,b2 ,b3 ,b4 ,b5 ,b6 ,b7 ,b8)
                        (setf (gethash ,iid-name *iid-to-interface-class-mapping*)
                              (find-class ',name)))

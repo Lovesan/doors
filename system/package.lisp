@@ -28,6 +28,7 @@
   (:use #:cl #:alexandria #:virgil)
   (:export
     ;;libraries
+    #:ntdll
     #:kernel32
     #:user32
     #:gdi32
@@ -56,6 +57,7 @@
     #:tstring
     #:unicode-string-max-bytes
     #:unicode-string-max-chars
+    #:pascal-string
     
     ;;utility functions
     #:make-short
@@ -139,9 +141,8 @@
     #:error-access-denied
     #:error-data-pending
     
-    #:get-last-error
-    #:set-last-error
     #:last-error
+    #:invoke-last-error
     #:non-system-error
     #:system-error-code-p
     #:beep
@@ -174,15 +175,13 @@
     #:sem-no-alignment-fault-exception
     #:sem-no-page-fault-error-box
     #:sem-no-open-file-error-box
-    #:get-error-mode
-    #:set-error-mode
-    #:get-thread-error-mode
-    #:set-thread-error-mode
+    #:error-mode
+    #:thread-error-mode
     #:message-beep
     
     ;;winnt version
-    #:get-version
-    #:get-version-ex
+    #:os-version
+    #:os-version-ex
     #:winnt-version
     #:version-suite
     #:ver-suite-backoffice
@@ -217,33 +216,7 @@
     #:osverinfo-suite-mask
     #:osverinfo-product-type
     
-    ;;uuid and friends
-    #:uuid-of
-    #:uuid-null
-    #:guid-null
-    #:iid-null
-    #:clsid-null
-    #:fmtid-null
-    
-    #:uuid
-    #:uuid-dw
-    #:uuid-w1
-    #:uuid-w2
-    #:uuid-b1
-    #:uuid-b2
-    #:uuid-b3
-    #:uuid-b4
-    #:uuid-b5
-    #:uuid-b6
-    #:uuid-b7
-    #:uuid-b8
-    #:uuid-p
-    #:copy-uuid
-    #:define-uuid
-    #:define-ole-uuid
-    #:with-uuid-accessors
-    #:uuid-equal
-    
+    ;;guid and friends    
     #:guid
     #:guid-dw
     #:guid-w1
@@ -263,122 +236,17 @@
     #:with-guid-accessors
     #:guid-equal
     
-    #:iid
-    #:iid-dw
-    #:iid-w1
-    #:iid-w2
-    #:iid-b1
-    #:iid-b2
-    #:iid-b3
-    #:iid-b4
-    #:iid-b5
-    #:iid-b6
-    #:iid-b7
-    #:iid-b8
-    #:iid-p
-    #:copy-iid
-    #:define-iid
-    #:define-ole-iid
-    #:with-iid-accessors
-    #:iid-equal
+    #:uuid
+    #:uuid-of
+    #:uuid-null
     
-    #:clsid
-    #:clsid-dw
-    #:clsid-w1
-    #:clsid-w2
-    #:clsid-b1
-    #:clsid-b2
-    #:clsid-b3
-    #:clsid-b4
-    #:clsid-b5
-    #:clsid-b6
-    #:clsid-b7
-    #:clsid-b8
-    #:clsid-p
-    #:copy-clsid
-    #:define-clsid
-    #:define-ole-clsid
-    #:with-clsid-accessors
-    #:clsid-equal
-    
-    #:fmtid
-    #:fmtid-dw
-    #:fmtid-w1
-    #:fmtid-w2
-    #:fmtid-b1
-    #:fmtid-b2
-    #:fmtid-b3
-    #:fmtid-b4
-    #:fmtid-b5
-    #:fmtid-b6
-    #:fmtid-b7
-    #:fmtid-b8
-    #:fmtid-p
-    #:copy-fmtid
-    #:define-fmtid
-    #:define-ole-fmtid
-    #:with-fmtid-accessors
-    #:fmtid-equal
-        
-    #:objectid
-    #:copy-objectid
-    #:objectid-p
-    #:objectid-lineage
-    #:objectid-uniquifier
-    
-    ;;security stuff
-    #:security-attributes
-    #:security-atributes-descriptor
-    #:security-attributes-inherit-handle
-    #:luid
-    #:luid-low-part
-    #:luid-high-part
-    #:trustee
-    #:trustee-name
-    #:trustee-form
-    #:trustee-type
-    #:trustee-is-sid
-    #:trustee-is-name
-    #:trustee-is-bad-form
-    #:trustee-is-objects-and-sid
-    #:trustee-is-objects-and-name
-    #:trustee-is-unknown
-    #:trustee-is-user
-    #:trustee-is-group
-    #:trustee-is-domain
-    #:trustee-is-alias
-    #:trustee-is-well-known-group
-    #:trustee-is-deleted
-    #:trustee-is-invalid
-    #:trustee-is-compute
-    #:se-object-type
-    #:se-unknown-object-type
-    #:se-file-object
-    #:se-service
-    #:se-printer
-    #:se-registry-key
-    #:se-lmshare
-    #:se-kernel-object
-    #:se-window-object
-    #:se-ds-object
-    #:se-ds-object-all
-    #:se-provider-defined-object
-    #:se-wmi-guid-object
-    #:se-registry-wow64-32-key
-    #:objects-and-name
-    #:make-objects-and-name
-    #:objects-and-name
-    #:objects-and-name-objects-present
-    #:objects-and-name-object-type
-    #:objects-and-name-object-type-name
-    #:objects-and-name-inherited-object-type-name
-    #:objects-and-name-name
-    #:object-and-sid
-    #:make-objects-and-sid
-    #:objects-and-sid-objects-present
-    #:objects-and-sid-object-type-guid
-    #:objects-and-sid-inherited-object-type-guid
-    #:objects-and-sid-sid
+    ;;handle stuff
+    #:close-handle
+    #:duplicate-handle
+    #:handle-flags
+    #:handle-flag-inherit
+    #:handle-flag-protect-from-close
+    #:handle-information
     
     ;;console stuff
     #:console-event
@@ -406,6 +274,7 @@
     #:char-common-lvb-reverse-video
     #:char-common-lvb-underscore
     #:char-info
+    #:make-char-info
     #:char-info-char
     #:char-info-attributes
     #:console-cursor-info
@@ -447,7 +316,7 @@
     #:make-console-read-control
     #:console-rc-initial-chars
     #:console-rc-wakeup-mask
-    #:control-rc-control-key-state
+    #:console-rc-control-key-state
     #:small-rect
     #:small-rect-left
     #:small-rect-top
@@ -519,18 +388,18 @@
     #:flush-console-input-buffer
     #:free-console
     #:generate-console-ctrl-event
-    #:get-console-alias
-    #:get-console-aliases-length
-    #:get-console-aliases
-    #:get-console-alias-exes-length
-    #:get-console-alias-exes
+    #:console-alias
+    #:console-aliases-length
+    #:console-aliases
+    #:console-alias-exes-length
+    #:console-alias-exes
     #:console-input-code-page
     #:console-output-code-page
     #:console-cursor-info
     #:console-display-mode
     #:console-fullscreen
     #:console-fullscreen-hardware
-    #:get-console-font-size
+    #:console-font-size
     #:console-mode
     #:enable-echo-input
     #:enable-insert-mode
@@ -539,16 +408,16 @@
     #:enable-processed-io
     #:enable-quick-edit-mode
     #:enable-window-input
-    #:get-console-original-title
-    #:get-console-process-list
-    #:get-console-selection-info
+    #:console-original-title
+    #:console-process-list
+    #:console-selection-info
     #:console-title
-    #:get-console-window
+    #:console-window
     #:current-console-font
     #:current-console-font-ex
-    #:get-largest-console-window-size
-    #:get-number-of-console-input-events
-    #:get-number-of-console-mouse-buttons
+    #:largest-console-window-size
+    #:number-of-console-input-events
+    #:number-of-console-mouse-buttons
     #:peek-console-input
     #:read-console
     #:read-console-input
@@ -561,10 +430,212 @@
     #:console-cursor-position
     #:console-text-attribute
     #:console-screen-buffer-size
-    #:set-console-window-info
+    #:console-window-info
     #:write-console
     #:write-console-input
     #:write-console-output
     #:write-console-output-attribute
     #:write-console-output-character
+    
+    ;;DLL stuff
+    #:disable-thread-library-calls
+    #:free-library
+    #:free-library-and-exit-thread
+    #:dll-directory
+    #:module-file-name
+    #:module-handle
+    #:module-handle-ex-flags
+    #:module-handle-ex-flag-inc-refcount
+    #:module-handle-ex-flag-pin
+    #:module-handle-ex-flag-from-address
+    #:module-handle-ex-flag-unchanged-refcount
+    #:module-handle-ex
+    #:proc-address
+    #:load-library
+    #:load-library-ex-flags
+    #:load-library-dont-resolve-dll-references
+    #:load-library-ignore-code-authz-level
+    #:load-library-as-datafile
+    #:load-library-as-datafile-exclusive
+    #:load-library-as-image-resource
+    #:load-library-with-altered-search-path
+    #:load-library-ex
+    #:load-params
+    #:make-load-params
+    #:load-params-env-address
+    #:load-params-cmd-line
+    #:load-params-cmd-show
+    #:load-module
+    
+    ;;processes, processors, threads and thread pools
+    #:processor-cache-type
+    #:cache-unified
+    #:cache-instruction
+    #:cache-data
+    #:cache-trace
+    #:cache-descriptor
+    #:make-cache-descriptor
+    #:cache-level
+    #:cache-associativity
+    #:cache-line-size
+    #:cache-size
+    #:cache-type
+    #:io-counters
+    #:make-io-counters
+    #:read-operation-count
+    #:write-operation-count
+    #:other-operation-count
+    #:read-transfer-count
+    #:write-transfer-count
+    #:other-transfer-count
+    #:ldr-data-table-entry
+    #:ldr-data-flink
+    #:ldr-data-blink
+    #:ldr-data-dll-base
+    #:ldr-data-entry-point
+    #:ldr-data-full-dll-name
+    #:ldr-data-checksum
+    #:ldr-data-time-date-stamp
+    #:peb-ldr-data
+    #:ldr-flink
+    #:ldr-blink
+    #:user-process-parameters
+    #:user-process-image-path-name
+    #:user-process-command-line
+    #:peb
+    #:peb-being-debugged
+    #:peb-ldr
+    #:peb-loader-data
+    #:peb-process-parameters
+    #:peb-post-process-init-routine
+    #:peb-session-id
+    #:process-information
+    #:make-process-information
+    #:process-info-handle
+    #:process-info-thread-handle
+    #:process-info-id
+    #:process-info-thread-id
+    #:startup-flags
+    #:start-force-on-feedback
+    #:start-force-off-feedback
+    #:start-prevent-pinning
+    #:start-run-fullscreen
+    #:start-title-is-app-id
+    #:start-title-is-link-name
+    #:start-use-count-chars
+    #:start-use-file-attribute
+    #:start-use-hotkey
+    #:start-use-position
+    #:start-use-show-window
+    #:start-use-size
+    #:start-use-std-handles
+    #:startup-info
+    #:make-startup-info
+    #:startup-info-desktop
+    #:startup-info-title
+    #:startup-info-x
+    #:startup-info-y
+    #:startup-info-x-size
+    #:startup-info-y-size
+    #:startup-info-x-count-chars
+    #:startup-info-y-count-chars
+    #:startup-info-fill-attribute
+    #:startup-info-flags
+    #:startup-info-show-window
+    #:startup-info-stdin
+    #:startup-info-stdout
+    #:startup-info-stderror
+    #:startup-info-ex
+    #:make-startup-info-ex
+    #:startup-info-ex-desktop
+    #:startup-info-ex-title
+    #:startup-info-ex-x
+    #:startup-info-ex-y
+    #:startup-info-ex-x-size
+    #:startup-info-ex-y-size
+    #:startup-info-ex-x-count-chars
+    #:startup-info-ex-y-count-chars
+    #:startup-info-ex-fill-attribute
+    #:startup-info-ex-flags
+    #:startup-info-ex-show-window
+    #:startup-info-ex-stdin
+    #:startup-info-ex-stdout
+    #:startup-info-ex-stderror    
+    #:startup-info-ex-attribute-list
+    #:teb
+    #:process-creation-flags
+    #:create-break-away-from-job
+    #:create-default-error-mode
+    #:create-new-console
+    #:create-new-process-group
+    #:create-no-window
+    #:create-protected-process
+    #:create-preserve-code-authz-level
+    #:create-shared-wow-vdm
+    #:create-suspended
+    #:create-unicode-environment
+    #:create-debug-only-this-process
+    #:create-debug-process
+    #:create-extended-startup-info-present
+    #:create-inherit-parent-affinity
+    #:create-process
+    #:create-process-as-user
+    #:create-process-with-logon
+    #:create-process-with-token
+    #:exit-process
+    #:flush-process-write-buffers
+    #:free-environment-strings
+    #:command-line
+    #:current-process
+    #:current-process-id
+    #:current-processor-number
+    #:environment-strings
+    #:environment-variable
+    #:process-exit-code
+    #:gui-resources
+    #:priority-class
+    #:above-normal-priority-class
+    #:below-normal-priority-class
+    #:high-priority-class
+    #:idle-priority-class
+    #:normal-priority-class
+    #:realtime-priority-class
+    #:process-affinity-mask
+    #:process-group-affinity
+    #:process-handle-count
+    #:process-id
+    #:process-id-of-thread
+    #:process-io-counters
+    #:process-priority-boost
+    #:process-shutdown-parameters
+    #:process-times
+    #:process-version
+    #:process-working-set-size
+    #:process-working-set-size-ex
+    #:processor-system-cycle-time
+    #:need-current-directory-for-exe-path
+    #:process-access-flags
+    #:process-access-delete
+    #:process-access-read-control
+    #:process-access-synchronize
+    #:process-access-write-dac
+    #:process-access-write-owner
+    #:process-access-all
+    #:process-access-create-process
+    #:process-access-create-thread
+    #:process-access-dup-handle
+    #:process-access-query-information
+    #:process-access-query-limited-information
+    #:process-access-set-information
+    #:process-access-set-quota
+    #:process-access-suspend-resume
+    #:process-access-terminate
+    #:process-access-vm-operation
+    #:process-access-vm-read
+    #:process-access-vm-write
+    #:open-process
+    #:full-process-image-name
+    #:process-affinity-update-mode
+    #:process-cycle-time
+    #:terminate-process
     ))

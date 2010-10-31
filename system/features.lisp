@@ -24,6 +24,11 @@
 
 (in-package #:doors)
 
+#+windows
+(pushnew :doors *features*)
+#-windows
+(error "Operating system not supported")
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (when (equal (ignore-errors
                  (with-pointer (p "test" '(string :encoding :utf-16le))

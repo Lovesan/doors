@@ -59,7 +59,7 @@
              (add-vectors interface v1 v2)
              #(11.0 14.0 17.0 20.0)))))
 
-(define-iid iid-stack
+(define-guid iid-stack
     #xCAFEBABE #xF001 #xBABE 0 0 0 0 #x0B #xAD #xF0 #x0D)
 
 (define-interface stack (iid-stack unknown)

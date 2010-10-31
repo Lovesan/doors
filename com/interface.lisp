@@ -24,6 +24,13 @@
 
 (in-package #:doors.com)
 
+(defalias iid () 'guid)
+(deftype iid () 'guid)
+
+(defalias clsid () 'guid)
+(deftype clsid () 'guid)
+
+
 (defvar *pointer-to-object-mapping* (make-weak-hash-table :test #'eql
                                       :weakness :value))
 

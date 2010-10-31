@@ -23,7 +23,7 @@
 ;;; DEALINGS IN THE SOFTWARE.
 
 (asdf:defsystem #:doors
-  :version "0.1.1"
+  :version "0.2.0"
   :description "Doors, a lisper's gateway to Windows"
   :author "Dmitry Ignatiev <lovesan.ru@gmail.com>"
   :maintainer "Dmitry Ignatiev <lovesan.ru@gmail.com>"
@@ -39,10 +39,11 @@
                                      (:file "osversion")
                                      (:file "hresult")
                                      (:file "errors")
-                                     (:file "uuid")
-                                     (:file "security")
-                                     (:file "console")
-                                     ))               
+                                     (:file "guid")
+                                     (:file "handles")
+                                     (:file "dlls")
+                                     (:file "time")
+                                     ))
                (:module "com"
                         :serial t
                         :components ((:file "package")
@@ -50,6 +51,21 @@
                                      (:file "interface-defs")
                                      (:file "object")
                                      (:file "unknown")
-                                     ))))
+                                     ))
+               (:module "security"
+                        :serial t
+                        :components ((:file "package")
+                                     (:file "authentication")
+                                     (:file "authorization")
+                                     ))
+               (:module "system-aux"
+                        :pathname "system"
+                        :serial t
+                        :components ((:file "console")
+                                     (:file "processes")))
+               ;(:module "com-aux"
+               ;         :pathname "com"
+               ;         :components ())
+                        ))
 
 ;; vim: ft=lisp et

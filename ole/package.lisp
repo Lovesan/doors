@@ -24,36 +24,8 @@
 
 (in-package #:cl-user)
 
-(defpackage #:doors.com
-  (:use #:cl #:alexandria #:trivial-garbage #:virgil #:doors)
+(defpackage #:doors.ole
+  (:use #:cl #:alexandria #:virgil #:doors #:doors.com)
   (:export
-   
-    #:iid
-    #:clsid
     
-    ;;com-interface related stuff
-    #:com-interface-class
-    #:com-interface
-    #:find-interface-class
-    #:find-interface-class-by-iid
-    #:com-interface-pointer
-    #:com-interface-method-pointer
-    #:translate-interface
-    #:convert-interface
-    #:define-interface
-    #:define-interface-method
-    
-    ;;com-object related stuff
-    #:com-object
-    #:acquire-interface
-    
-    ;;IUnknown
-    #:iid-unknown
-    #:unknown
-    #:query-interface
-    #:add-ref
-    #:release
-    #:known-iid
-    #:with-interface
-    #:with-interfaces
-    ))
+    #:define-ole-guid))

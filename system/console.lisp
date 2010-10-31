@@ -35,7 +35,9 @@
   (:update-simple #x4003))
 
 (define-enum (char-attributes
-               (:conc-name char-))
+               (:conc-name char-)
+               (:list t)
+               (:base-type word))
   (:foreground-blue #x0001)
   (:foreground-green #x0002)
   (:foreground-red #x0004)
@@ -53,8 +55,8 @@
   (:common-lvb-underscore #x8000))
 
 (define-struct (char-info
-                 (:constructor char-info
-                               (char attributes)))
+                 (:constructor make-char-info)
+                 (:constructor char-info (char attributes)))
     "Specifies a Unicode or ANSI character and its attributes."
   (char wchar)
   (attributes char-attributes))
@@ -63,16 +65,12 @@
   (if *print-readably*
     (call-next-method)
     (print-unreadable-object (object stream)
-      (format stream "~a ~{~[~:;~:*~s~^ ~]~}"
+      (format stream "~a~{ ~s~}"
               (char-info-char object)
-              (let ((attrs (convert (char-info-attributes object)
-                                    'char-attributes)))
-                (loop :for i :below 16
-                  :collect (translate (logand attrs (ash 1 i))
-                                      'char-attributes))))
+              (char-info-attributes object))
       object)))
 
-(define-struct (console-cursor-info                 
+(define-struct (console-cursor-info
                  (:conc-name console-cursor-))
     "Contains information about the console cursor."
   (size dword)
@@ -130,6 +128,7 @@
            (:no-dup #x1))))
 
 (define-enum (control-key-state
+               (:list t)
                (:conc-name control-key-))
   (:capslock-on #x0080)
   (:enhanced-key #x0100)
@@ -190,6 +189,7 @@
 
 (define-enum (console-selection-flags
                (:base-type dword)
+               (:list t)
                (:conc-name console-))
   (:mouse-down #x8)  
   (:mouse-selection #x4)
@@ -207,7 +207,7 @@
 (define-struct (focus-event-record
                  (:conc-name focus-event-))
     "Describes a focus event in a console."
-    (set-focus bool))
+  (set-focus bool))
 
 (define-struct (key-event-record
                  (:conc-name key-event-))
@@ -228,14 +228,14 @@
                  (:conc-name mouse-event-))
     "Describes a mouse input event in a console."
   (mouse-position coord)
-  (button-state (enum (:base-type dword)
+  (button-state (enum (:base-type dword :list t)
                       (:from-left-1st-button-pressed #x1)
                       (:from-left-2nd-button-pressed #x4)
                       (:from-left-3rd-button-pressed #x8)
                       (:from-left-4th-button-pressed #x10)
                       (:rightmost-button-pressed #x2)))
   (control-key-state control-key-state)
-  (flags (enum (:base-type dword)
+  (flags (enum (:base-type dword :list t)
                (:double-click 2)
                (:hwheeled 8)
                (:moved 1)
@@ -249,7 +249,7 @@
 (define-struct (input-record
                  (:reader %input-record-reader))
     "Describes an input event in the console input buffer. "
-  (event-type (enum (:base-type word)
+  (event-type (enum (:base-type word)                    
                     (:focus-event #x10)
                     (:key-event #x1)
                     (:menu-event #x8)
@@ -333,15 +333,15 @@
     (:stdcall kernel32)
   ((last-error handle valid-handle-p))
   "Creates a console screen buffer."
-  (desired-access (enum (:base-type dword)
+  (desired-access (enum (:base-type dword :list t)
                         (:generic-read  #x80000000)
                         (:generic-write #x40000000))
                   :key #xC0000000)
-  (share-mode (enum (:base-type dword)
+  (share-mode (enum (:base-type dword :list t)
                     (:file-share-read 1)
                     (:file-share-write 2))
               :key 0)
-  (security-attributes (& security-attributes :in t) :key void)
+  (security-attributes (& doors.security:security-attributes :in t) :key void)
   (flags dword :aux 1)
   (screen-buffer-data pointer :aux &0))
 
@@ -387,7 +387,7 @@
     (:stdcall kernel32)
   ((last-error bool))
   "Sends a specified signal to a console process group that shares the console associated with the calling process."
-  (ctrl-event (enum (:base-type dword)
+  (ctrl-event (enum (:base-type dword :list t)
                     :ctrl-c-event
                     :ctrl-break-event))
   (process-group-id dword :optional 0))
@@ -395,61 +395,65 @@
 (define-external-function
     (#+doors.unicode "GetConsoleAliasW"
      #-doors.unicode "GetConsoleAliasA"
-                   get-console-alias)
+                   console-alias)
     (:stdcall kernel32)
   ((last-error dword not-zero) rv  target-buffer)
   "Retrieves the text for the specified console alias and executable."
   (source (& tstring))
   (target-buffer (& tstring :out)
                  :aux (make-string buffer-length))
-  (buffer-length dword)
+  (buffer-length dword :optional 256)
   (exe-name (& tstring)))
 
 (define-external-function
     (#+doors.unicode "GetConsoleAliasesLengthW"
      #-doors.unicode "GetConsoleAliasesLengthA"
-                   get-console-aliases-length)
+                   console-aliases-length)
     (:stdcall kernel32)
   (dword)
-  "Retrieves the required size for the buffer used by the get-console-aliases function."
+  "Retrieves the required size for the buffer used by the console-aliases function."
   (exe-name (& tstring)))
 
 (define-external-function
     (#+doors.unicode "GetConsoleAliasesW"
      #-doors.unicode "GetConsoleAliasesA"
-                   get-console-aliases)
+                   console-aliases)
     (:stdcall kernel32)
   ((last-error dword not-zero) rv alias-buffer)
   "Retrieves all defined console aliases for the specified executable."
   (alias-buffer (& tstring :out)
                 :aux (make-string buffer-length))
-  (buffer-length dword :optional (get-console-aliases-length exe-name))
+  (buffer-length dword :optional (console-aliases-length exe-name))
   (exe-name (& tstring)))
 
 (define-external-function
     (#+doors.unicode "GetConsoleAliasExesLengthW"
      #-doors.unicode "GetConsoleAliasExesLengthA"
-                   get-console-alias-exes-length)
+                   console-alias-exes-length)
     (:stdcall kernel32)
   (dword)
-  "Retrieves the required size for the buffer used by the get-console-alias-exes function.")
+  "Retrieves the required size for the buffer used by the console-alias-exes function.")
+
+(define-symbol-macro console-alias-exes-length (console-alias-exes-length))
 
 (define-external-function
     (#+doors.unicode "GetConsoleAliasExesW"
      #-doors.unicode "GetConsoleAliasExesA"
-                   get-console-alias-exes)
+                   console-alias-exes)
     (:stdcall kernel32)
   ((last-error dword not-zero) rv exe-name-buffer)
   "Retrieves the names of all executable files with console aliases defined."
   (exe-name-buffer (& tstring :out)
                    :aux (make-string buffer-length))
-  (buffer-length dword :optional (get-console-alias-exes-length)))
+  (buffer-length dword :optional console-alias-exes-length))
 
 (define-external-function
     ("GetConsoleCP" console-input-code-page)
     (:stdcall kernel32)
   (uint)
   "Retrieves the input code page used by the console associated with the calling process. ")
+
+(define-symbol-macro console-input-code-page (console-input-code-page))
 
 (define-external-function
     ("GetConsoleCursorInfo" console-cursor-info)
@@ -459,8 +463,12 @@
   (console-output handle :optional (std-handle :output-handle))
   (cursor-info (& console-cursor-info :out) :aux))
 
+(define-symbol-macro console-cursor-info
+    (console-cursor-info))
+
 (define-enum (console-display-mode-flags
                (:base-type dword)
+               (:list t)
                (:conc-name console-))
   (:fullscreen 1)
   (:fullscreen-hardware 2))
@@ -472,15 +480,20 @@
   "Retrieves the display mode of the current console."
   (mode-flags (& console-display-mode-flags :out) :aux))
 
+(define-symbol-macro console-display-mode (console-display-mode))
+
 #-win2000
 (define-external-function
-    ("GetConsoleFontSize" (:camel-case))
+    ("GetConsoleFontSize" console-font-size)
     (:stdcall kernel32)
   ((last-error dword not-zero) rv
    (coord-from-dword rv))
   "Retrieves the size of the font used by the specified console screen buffer."
   (console-output handle :optional (std-handle :output-handle))
   (font dword))
+
+#-win2000
+(define-symbol-macro console-font-size (console-font-size))
 
 #-(or win2000 winxp winxp64 winserver2003 winhomeserver)
 (define-external-function
@@ -490,8 +503,13 @@
   "Retrieves the history settings for the calling process's console."
   (history-info (& console-history-info :out) :aux))
 
+#-(or win2000 winxp winxp64 winserver2003 winhomeserver)
+(define-symbol-macro console-history-info
+    (console-history-info))
+
 (define-enum (console-mode
                (:base-type dword)
+               (:list t)
                (:conc-name nil))
   (:enable-echo-input #x0004)  
   (:enable-insert-mode #x0020)
@@ -509,18 +527,23 @@
   (console-handle handle :optional (std-handle :input-handle))
   (mode (& console-mode :out) :aux))
 
+(define-symbol-macro console-mode (console-mode))
+
 #-(or win2000 winxp winxp64 winserver2003 winhomeserver)
 (define-external-function
     (#+doors.unicode "GetConsoleOriginalTitleW"
      #-doors.unicode "GetConsoleOriginalTitleA"
-                   get-console-original-title)
+                   console-original-title)
     (:stdcall kernel32)
   (dword rv (if (zerop rv)
-              (last-error nil "")
+              (invoke-last-error nil "")
               (subseq console-title 0 rv)))
   "Retrieves the original title for the current console window."
   (console-title (& tstring :out) :aux (make-string size))
   (size dword :optional 256))
+
+#-(or win2000 winxp winxp64 winserver2003 winhomeserver)
+(define-symbol-macro console-original-title (console-original-title))
 
 (define-external-function
     ("GetConsoleOutputCP" console-output-code-page)
@@ -528,9 +551,11 @@
   (uint)
   "Retrieves the output code page used by the console associated with the calling process. ")
 
+(define-symbol-macro console-output-code-page (console-output-code-page))
+
 #-win2000
 (define-external-function
-    ("GetConsoleProcessList" (:camel-case))
+    ("GetConsoleProcessList" console-process-list)
     (:stdcall kernel32)
   ((last-error dword not-zero) rv
    (if (<= rv process-count)
@@ -552,6 +577,9 @@
   (console-output handle :optional (std-handle :output-handle))
   (info (& console-screen-buffer-info :out) :aux))
 
+(define-symbol-macro console-screen-buffer-info
+    (console-screen-buffer-info))
+
 #-(or win2000 winxp winxp64 winserver2003 winhomeserver)
 (define-external-function
     ("GetConsoleScreenBufferInfoEx" console-screen-buffer-info-ex)
@@ -562,12 +590,19 @@
   (info (& console-screen-buffer-info-ex :out) :aux))
 
 #-win2000
+(define-symbol-macro console-screen-buffer-info-ex
+    (console-screen-buffer-info-ex))
+
+#-win2000
 (define-external-function
-    ("GetConsoleSelectionInfo" (:camel-case))
+    ("GetConsoleSelectionInfo" console-selection-info)
     (:stdcall kernel32)
   ((last-error bool) rv info)
   "Retrieves information about the current console selection."
   (info (& console-selection-info :out) :aux))
+
+#-win2000
+(define-symbol-macro console-selection-info (console-selection-info))
 
 (define-external-function
     (#+doors.unicode "GetConsoleTitleW"
@@ -579,11 +614,15 @@
   (title (& tstring :out) :aux (make-string size))
   (size dword :optional 256))
 
+(define-symbol-macro console-title (console-title))
+
 (define-external-function
-    ("GetConsoleWindow" (:camel-case))
+    ("GetConsoleWindow" console-window)
     (:stdcall kernel32)
   (handle)
   "Retrieves the window handle used by the console associated with the calling process.")
+
+(define-symbol-macro console-window (console-window))
 
 #-win2000
 (define-external-function
@@ -596,6 +635,9 @@
   (info (& console-font-info :out) :aux))
 
 #-win2000
+(define-symbol-macro current-console-font (current-console-font))
+
+#-win2000
 (define-external-function
     ("GetCurrentConsoleFontEx" current-console-font-ex)
     (:stdcall kernel32)
@@ -605,29 +647,40 @@
   (maximum-window-size bool :optional)
   (info (& console-font-info-ex :out) :aux))
 
+#-win2000
+(define-symbol-macro current-console-font-ex (current-console-font-ex))
+
 (define-external-function
-    ("GetLargestConsoleWindowSize" (:camel-case))
+    ("GetLargestConsoleWindowSize" largest-console-window-size)
     (:stdcall kernel32)
   (dword rv (if (zerop rv)
-              (last-error)
+              (invoke-last-error)
               (coord-from-dword rv)))
   "Retrieves the size of the largest possible console window, based on the current font and the size of the display."
   (console-output handle :optional (std-handle :output-handle)))
 
+(define-symbol-macro larget-console-window-size (largest-console-window-size))
+
 (define-external-function
-    ("GetNumberOfConsoleInputEvents" (:camel-case))
+    ("GetNumberOfConsoleInputEvents" number-of-console-input-events)
     (:stdcall kernel32)
   ((last-error bool) rv n)
   "Retrieves the number of unread input records in the console's input buffer."
   (console-input handle :optional (std-handle :input-handle))
   (n (& dword :out) :aux))
 
+(define-symbol-macro number-of-console-input-events
+    (number-of-console-input-events))
+
 (define-external-function
-    ("GetNumberOfConsoleMouseButtons" (:camel-case))
+    ("GetNumberOfConsoleMouseButtons" number-of-console-mouse-buttons)
     (:stdcall kernel32)
   ((last-error bool) rv n)
   "Retrieves the number of buttons on the mouse used by the current console."
   (n (& dword :out) :aux))
+
+(define-symbol-macro number-of-console-mouse-buttons
+    (number-of-console-mouse-buttons))
 
 (define-external-function
     (#+doors.unicode "PeekConsoleInputW"
@@ -690,7 +743,7 @@
   ((last-error bool) rv n)
   "Copies a specified number of character attributes from consecutive cells of a console screen buffer, beginning at a specified location."
   (console-output handle :optional (std-handle :output-handle))
-  (attrs (& (array word) :out))
+  (attrs (& (array char-attributes) :out))
   (length dword :optional (array-total-size attrs))
   (read-coord dword)
   (n (& dword :out) :aux))
@@ -724,36 +777,41 @@
 (define-external-function
     ("SetConsoleActiveScreenBuffer" (setf console-active-screen-buffer))
     (:stdcall kernel32)
-  ((last-error bool))
+  ((last-error bool) rv console-output)
   "Sets the specified screen buffer to be the currently displayed console screen buffer."
   (console-output handle))
+
+(define-symbol-macro console-active-screen-buffer
+    (console-active-screen-buffer))
 
 (define-external-function
     ("SetConsoleCP" (setf console-input-code-page))
     (:stdcall kernel32)
-  ((last-error bool))
+  ((last-error bool) rv code-page-id)
   "Sets the input code page used by the console associated with the calling process."
   (code-page-id uint))
 
 (define-external-function
     ("SetConsoleCtrlHandler" (setf console-ctrl-handler))
     (:stdcall kernel32)
-  ((last-error bool))
+  ((last-error bool) rv handler-routine)
   "Adds or removes an application-defined callback from the list of handler functions for the calling process."
   (handler-routine pointer)
   (add bool :optional t))
 
+(define-symbol-macro console-ctrl-handler (console-ctrl-handler))
+
 (define-external-function
     ("SetConsoleOutputCP" (setf console-output-code-page))
     (:stdcall kernel32)
-  ((last-error bool))
+  ((last-error bool) rv code-page-id)
   "Sets the output code page used by the console associated with the calling process. "
   (code-page-id uint))
 
 (define-external-function
     ("SetConsoleMode" (setf console-mode))
     (:stdcall kernel32)
-  ((last-error bool))
+  ((last-error bool) rv mode)
   "Sets the input mode of a console's input buffer or the output mode of a console screen buffer."
   (console-handle handle :optional (std-handle :input-handle))
   (mode console-mode))
@@ -761,7 +819,7 @@
 (define-external-function
     ("SetConsoleCursorInfo" (setf console-cursor-info))
     (:stdcall kernel32)
-  ((last-error bool))
+  ((last-error bool) rv cursor-info)
   "Sets the size and visibility of the cursor for the specified console screen buffer."
   (console-output handle :optional (std-handle :output-handle))
   (cursor-info (& console-cursor-info)))
@@ -769,10 +827,12 @@
 (define-external-function
     ("SetConsoleCursorPosition" (setf console-cursor-position))
     (:stdcall kernel32)
-  ((last-error bool))
+  ((last-error bool) rv (coord-from-dword coord))
   "Sets the cursor position in the specified console screen buffer."
   (console-output handle :optional (std-handle :output-handle))
   (coord dword))
+
+(define-symbol-macro console-cursor-position (console-cursor-position))
 
 #-win2000
 (define-external-function
@@ -787,7 +847,7 @@
 (define-external-function
     ("SetConsoleHistoryInfo" (setf console-history-info))
     (:stdcall kernel32)
-  ((last-error bool))
+  ((last-error bool) rv history-info)
   "Sets the history settings for the calling process's console."
   (history-info (& console-history-info)))
 
@@ -795,7 +855,7 @@
 (define-external-function
     ("SetConsoleScreenBufferInfoEx" (setf console-screen-buffer-info-ex))
     (:stdcall kernel32)
-  ((last-error bool))
+  ((last-error bool) rv info)
   "Sets extended information about the specified console screen buffer."
   (console-output handle :optional (std-handle :output-handle))
   (info (& console-screen-buffer-info-ex)))
@@ -803,23 +863,28 @@
 (define-external-function
     ("SetConsoleScreenBufferSize" (setf console-screen-buffer-size))
     (:stdcall kernel32)
-  ((last-error bool))
+  ((last-error bool) rv size-coord)
   "Changes the size of the specified console screen buffer."
   (console-output handle :optional (std-handle :output-handle))
   (size-coord dword))
 
+(define-symbol-macro console-screen-buffer-size
+    (console-screen-buffer-size))
+
 (define-external-function
     ("SetConsoleTextAttribute" (setf console-text-attribute))
     (:stdcall kernel32)
-  ((last-error bool))
+  ((last-error bool) rv attributes)
   "Sets the attributes of characters written to the console screen buffer."
   (console-output handle :optional (std-handle :output-handle))
   (attributes char-attributes))
 
+(define-symbol-macro console-text-attribute (console-text-attribute))
+
 (define-external-function
     ("SetStdHandle" (setf std-handle))
     (:stdcall kernel32)
-  ((last-error bool))
+  ((last-error bool) rv handle)
   "Sets the handle for the specified standard device (standard input, standard output, or standard error)."
   (handle-type std-handle :optional 0)
   (handle handle))
@@ -829,24 +894,26 @@
      #-doors.unicode "SetConsoleTitleA"
                    (setf console-title))
     (:stdcall kernel32)
-  ((last-error bool))
+  ((last-error bool) rv console-title)
   "Sets the title for the current console window."
   (console-title (& tstring)))
 
 (define-external-function
-    ("SetConsoleWindowInfo" (:camel-case))
+    ("SetConsoleWindowInfo" (setf console-window-info))
     (:stdcall kernel32)
-  ((last-error bool))
+  ((last-error bool) rv (values console-window absolute))
   "Sets the current size and position of a console screen buffer's window."
   (console-output handle :optional (std-handle :output-handle))  
-  (absolute boolean)
+  (absolute boolean :optional t)
   (console-window (& small-rect)))
+
+(define-symbol-macro console-window-info (console-window-info))
 
 #-(or win2000 winxp winxp64 winserver2003 winhomeserver)
 (define-external-function
     ("SetCurrentConsoleFontEx" (setf current-console-font-ex))
     (:stdcall kernel32)
-  ((last-error bool))
+  ((last-error bool) rv info)
   "Sets extended information about the current console font."
   (console-output handle :optional (std-handle :output-handle))
   (maximum-window bool :optional)
@@ -898,7 +965,7 @@
   ((last-error bool) rv n)
   "Copies a number of character attributes to consecutive cells of a console screen buffer, beginning at a specified location."
   (console-output handle :optional (std-handle :output-handle))
-  (attributes (& (array word)))
+  (attributes (& (array char-attributes)))
   (length dword :optional (array-total-size attributes))
   (write-coord dword)
   (n (& dword :out) :aux))

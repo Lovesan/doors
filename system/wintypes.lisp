@@ -170,3 +170,48 @@
 
 (defconstant unicode-string-max-bytes 65534)
 (defconstant unicode-string-max-chars 32767)
+
+
+(define-translatable-type pascal-string-type ()
+  ()
+  (:simple-parser pascal-string)
+  (:size (val type)
+    (1+ (length val)))
+  (:size-expansion (val type)
+    `(1+ (length ,val)))
+  (:align (type) 1)
+  (:prototype (type) "")
+  (:prototype-expansion (type) "")
+  (:reader (ptr out type)
+    (let ((len (deref ptr 'byte)))
+      (read-cstring ptr :out out :byte-length len
+                    :encoding :ascii
+                    :offset 1)))
+  (:reader-expansion (pointer out type)
+    (once-only ((pointer `(the pointer ,pointer)))
+      (with-gensyms (length)
+        `(let ((,length (deref ,pointer 'byte)))
+           (read-cstring ,pointer :out ,out :byte-length ,length
+                         :encoding :ascii
+                         :offset 1)))))
+  (:writer (val ptr type)
+    (let ((len (length val)))
+      (setf (deref ptr 'byte) len)
+      (write-cstring val ptr :byte-length len
+                     :encoding :ascii
+                     :offset 1)))
+  (:writer-expansion (value pointer type)
+    (once-only ((pointer `(the pointer ,pointer))
+                (value `(the string ,value)))
+      (with-gensyms (length)
+        `(let ((,length (length ,value)))
+           (setf (deref ,pointer 'byte) ,length)
+           (write-cstring ,value ,pointer :byte-length ,length
+                          :encoding :ascii
+                          :offset 1)))))
+  (:cleaner-expansion (ptr val type)
+    nil)
+  (:allocator-expansion (val type)
+    `(raw-alloc (1+ (length ,val))))
+  (:deallocator-expansion (ptr type)
+    `(raw-free ,ptr)))

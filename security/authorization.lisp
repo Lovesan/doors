@@ -22,7 +22,7 @@
 ;;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;;; DEALINGS IN THE SOFTWARE
 
-(in-package #:doors)
+(in-package #:doors.security)
 
 (define-struct (security-attributes
                  (:conc-name security-)
