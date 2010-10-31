@@ -149,7 +149,7 @@
     #:capture-stack-back-trace
     #:fatal-app-exit
     #:flash-window
-    #:flash-window-ex
+    #:flash-window*
     #:flash-window-flags
     #:flashw-stop
     #:flashw-caption
@@ -181,7 +181,7 @@
     
     ;;winnt version
     #:os-version
-    #:os-version-ex
+    #:os-version*
     #:winnt-version
     #:version-suite
     #:ver-suite-backoffice
@@ -204,7 +204,6 @@
     #:ver-nt-server
     #:ver-nt-workstation
     #:os-version-info
-    #:os-version-info-ex-p
     #:osverinfo-size
     #:osverinfo-major-version
     #:osverinfo-minor-version
@@ -290,13 +289,13 @@
     #:make-console-font-info
     #:console-font
     #:console-font-size
-    #:console-font-info-ex
-    #:make-console-font-info-ex
-    #:console-ex-font
-    #:console-ex-font-size
-    #:console-ex-font-family
-    #:console-ex-font-weight
-    #:console-ex-face-name
+    #:console-font-info*
+    #:make-console-font-info*
+    #:console-font*
+    #:console-font-size*
+    #:console-font-family
+    #:console-font-weight
+    #:console-face-name
     #:console-history
     #:make-console-history-info
     #:console-history-buffer-size
@@ -329,16 +328,16 @@
     #:console-sb-attributes
     #:console-sb-window
     #:console-sb-maximum-window-size
-    #:console-screen-buffer-info-ex
-    #:make-console-screen-buffer-info-ex
-    #:console-sb-ex-size
-    #:console-sb-ex-cursor-position
-    #:console-sb-ex-attributes
-    #:console-sb-ex-window
-    #:console-sb-ex-maximum-window-size
-    #:console-sb-ex-popup-attributes
-    #:console-sb-ex-fill-screen-supported
-    #:console-sb-ex-color-table
+    #:console-screen-buffer-info*
+    #:make-console-screen-buffer-info*
+    #:console-sb-size*
+    #:console-sb-cursor-position*
+    #:console-sb-attributes*
+    #:console-sb-window*
+    #:console-sb-maximum-window-size*
+    #:console-sb-popup-attributes
+    #:console-sb-fill-screen-supported
+    #:console-sb-color-table
     #:console-selection-flags
     #:console-mouse-down
     #:console-mouse-selection
@@ -414,7 +413,7 @@
     #:console-title
     #:console-window
     #:current-console-font
-    #:current-console-font-ex
+    #:current-console-font*
     #:largest-console-window-size
     #:number-of-console-input-events
     #:number-of-console-mouse-buttons
@@ -444,22 +443,22 @@
     #:dll-directory
     #:module-file-name
     #:module-handle
-    #:module-handle-ex-flags
-    #:module-handle-ex-flag-inc-refcount
-    #:module-handle-ex-flag-pin
-    #:module-handle-ex-flag-from-address
-    #:module-handle-ex-flag-unchanged-refcount
-    #:module-handle-ex
+    #:module-handle-flags
+    #:module-handle-flag-inc-refcount
+    #:module-handle-flag-pin
+    #:module-handle-flag-from-address
+    #:module-handle-flag-unchanged-refcount
+    #:module-handle*
     #:proc-address
     #:load-library
-    #:load-library-ex-flags
+    #:load-library-flags
     #:load-library-dont-resolve-dll-references
     #:load-library-ignore-code-authz-level
     #:load-library-as-datafile
     #:load-library-as-datafile-exclusive
     #:load-library-as-image-resource
     #:load-library-with-altered-search-path
-    #:load-library-ex
+    #:load-library*
     #:load-params
     #:make-load-params
     #:load-params-env-address
@@ -545,23 +544,9 @@
     #:startup-info-stdin
     #:startup-info-stdout
     #:startup-info-stderror
-    #:startup-info-ex
-    #:make-startup-info-ex
-    #:startup-info-ex-desktop
-    #:startup-info-ex-title
-    #:startup-info-ex-x
-    #:startup-info-ex-y
-    #:startup-info-ex-x-size
-    #:startup-info-ex-y-size
-    #:startup-info-ex-x-count-chars
-    #:startup-info-ex-y-count-chars
-    #:startup-info-ex-fill-attribute
-    #:startup-info-ex-flags
-    #:startup-info-ex-show-window
-    #:startup-info-ex-stdin
-    #:startup-info-ex-stdout
-    #:startup-info-ex-stderror    
-    #:startup-info-ex-attribute-list
+    #:startup-info*
+    #:make-startup-info*
+    #:startup-info-attribute-list
     #:teb
     #:process-creation-flags
     #:create-break-away-from-job
@@ -611,7 +596,7 @@
     #:process-times
     #:process-version
     #:process-working-set-size
-    #:process-working-set-size-ex
+    #:process-working-set-size*
     #:processor-system-cycle-time
     #:need-current-directory-for-exe-path
     #:process-access-flags

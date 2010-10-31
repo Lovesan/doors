@@ -87,10 +87,10 @@
 
 (define-symbol-macro module-handle (module-handle))
 
-(define-enum (module-handle-ex-flags
+(define-enum (module-handle-flags
                (:base-type dword)
                (:list t)
-               (:conc-name module-handle-ex-flag-))
+               (:conc-name module-handle-flag-))
   (:inc-refcount #x00000000)
   (:from-address #x00000004)
   (:pin #x00000001)
@@ -100,11 +100,11 @@
 (define-external-function
     (#+doors.unicode "GetModuleHandleExW"
      #-doors.unicode "GetModuleHandleExA"
-                   module-handle-ex)
+                   module-handle*)
     (:stdcall kernel32)
   ((last-error bool) rv module)
   "Retrieves a module handle for the specified module. The module must have been loaded by the calling process."
-  (flags module-handle-ex-flags)
+  (flags module-handle-flags)
   (module-name (union ()
                       pointer
                       (& tstring :in t))
@@ -112,7 +112,7 @@
   (module (& handle :out) :aux))
 
 #-win2000
-(define-symbol-macro module-handle-ex (module-handle-ex))
+(define-symbol-macro module-handle* (module-handle*))
 
 (define-external-function
     ("GetProcAddress" proc-address)
@@ -133,7 +133,7 @@
   "Loads the specified module into the address space of the calling process."
   (filename (& tstring)))
 
-(define-enum (load-library-ex-flags
+(define-enum (load-library-flags
                (:base-type dword)
                (:list t)
                (:conc-name load-library-))
@@ -147,19 +147,19 @@
 (define-external-function
     (#+doors.unicode "LoadLibraryExW"
      #-doors.unicode "LoadLibraryExA"
-                   load-library-ex)
+                   load-library*)
     (:stdcall kernel32)
   ((last-error handle))
   "Loads the specified module into the address space of the calling process. The specified module may cause other modules to be loaded."
   (filename (& tstring))
   (hfile handle :aux nil)
-  (flags load-library-ex-flags))
+  (flags load-library-flags))
 
 (define-struct (load-params
                 (:constructor make-load-params)
                 (:constructor
                   load-params (cmd-line &optional cmd-show env-address)))
-  (env-address (& (~ (& astring)) :in t) :initform void)
+  (env-address (& astring :in t) :initform void)
   (cmd-line (& pascal-string))
   (cmd-show (& dword) :initform #x00000002)
   (reserved dword :initform 0))
@@ -185,4 +185,4 @@
     (:stdcall kernel32)
   ((last-error bool) rv pathname)
   "Adds a directory to the search path used to locate DLLs for the application."
-  (pathname (& tstring) :optional void))
+  (pathname (& tstring :in t)))

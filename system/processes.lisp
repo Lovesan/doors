@@ -241,14 +241,14 @@
 (define-struct thread-attribute-list
   (pointer pointer))
 
-(define-struct (startup-info-ex
+(define-struct (startup-info*
                  (:include startup-info)
                  (:cleaner %startup-info-cleaner)
-                 (:constructor make-startup-info-ex
+                 (:constructor make-startup-info*
                                (&key desktop title x y x-size y-size
                                 x-count-chars y-count-chars fill-attribute
                                 flags show-window stdin stdout stderror
-                                attribute-list &aux (cb (sizeof 'startup-info-ex)))))
+                                attribute-list &aux (cb (sizeof 'startup-info*)))))
     "Specifies the window station, desktop, standard handles, and attributes for a new process. "
   (attribute-list thread-attribute-list))
 
@@ -304,7 +304,7 @@
   (environment pointer :key)
   (current-directory (& tstring :in t) :key)
   (startup-info (& (union ()
-                          (info-ex startup-info-ex)
+                          (info* startup-info*)
                           (info startup-info)))
                 :key (make-startup-info))
   (process-information (& process-information :out) :aux))
@@ -331,7 +331,7 @@
   (environment pointer :key)
   (current-directory (& tstring :in t) :key)
   (startup-info (& (union ()
-                          (info-ex startup-info-ex)
+                          (info* startup-info*)
                           (info startup-info)))
                 :key (make-startup-info))
   (process-information (& process-information :out) :aux))
@@ -354,7 +354,7 @@
   (environment pointer :key)
   (current-directory (& wstring :in t) :key)
   (startup-info (& (union ()
-                          (info-ex startup-info-ex)
+                          (info* startup-info*)
                           (info startup-info)))
                 :key (make-startup-info))
   (process-info (& process-information :out) :aux))
@@ -376,7 +376,7 @@
   (environment pointer :key)
   (current-directory (& wstring :in t) :key)
   (startup-info (& (union ()
-                          (info-ex startup-info-ex)
+                          (info* startup-info*)
                           (info startup-info)))
                 :key (make-startup-info))
   (process-info (& process-information :out) :aux))
@@ -659,7 +659,7 @@
 
 #-(or win2000 winxp winhomeserver winxp64)
 (define-external-function
-    ("GetProcessWorkingSetSizeEx" process-working-set-size-ex)
+    ("GetProcessWorkingSetSizeEx" process-working-set-size*)
     (:stdcall kernel32)
   ((last-error bool) rv (values min max flags))
   "Retrieves the minimum and maximum working set sizes of the specified process."
@@ -675,8 +675,8 @@
          :aux))
 
 #-(or win2000 winxp winhomeserver winxp64)
-(define-symbol-macro process-working-set-size-ex
-    (process-working-set-size-ex))
+(define-symbol-macro process-working-set-size*
+    (process-working-set-size*))
 
 #-(or win2000 winxp winhomeserver winxp64 winserver2003 winvista winserver2008)
 (define-external-function
@@ -853,7 +853,7 @@
 
 #-(or win2000 winxp winxp64 winhomeserver)
 (define-external-function
-    ("SetProcessWorkingSetSizeEx" (setf process-working-set-size-ex))
+    ("SetProcessWorkingSetSizeEx" (setf process-working-set-size*))
     (:stdcall kernel32)
   ((last-error bool) rv (values min max flags))
   "Sets the minimum and maximum working set sizes for the specified process."

@@ -23,7 +23,7 @@
 ;;; DEALINGS IN THE SOFTWARE.
 
 (asdf:defsystem #:doors
-  :version "0.2.0"
+  :version "0.2.1"
   :description "Doors, a lisper's gateway to Windows"
   :author "Dmitry Ignatiev <lovesan.ru@gmail.com>"
   :maintainer "Dmitry Ignatiev <lovesan.ru@gmail.com>"

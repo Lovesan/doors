@@ -1,3 +1,8 @@
+v0.2.1
+    * All "-ex" suffixes were substituted by "*" suffixes.
+        (i.e. LOAD-LIBRARY-EX was renamed LOAD-LIBRARY* and so on)
+        This makes names more lispy.
+
 v0.2.0
     * UUID, CLSID, FMTID and IID types have been redefined as and aliases for
         GUID. Also, removed all related stuff, such as their accessors and so

@@ -55,10 +55,10 @@
   (:server #x00000003)
   (:workstation #x00000001))
 
-(define-struct (os-version-info-ex
-                 (:constructor os-version-info-ex ())
+(define-struct (os-version-info
+                 (:constructor os-version-info ())
                  (:conc-name osverinfo-))
-  (size dword :initform (sizeof 'os-version-info-ex))
+  (size dword :initform (sizeof 'os-version-info))
   (major-version dword)
   (minor-version dword)
   (build-number dword)
@@ -87,17 +87,17 @@
 (define-external-function
     (#+doors.unicode "GetVersionExW"
      #-doors.unicode "GetVersionExA"
-                 os-version-ex)
+                 os-version*)
     (:stdcall kernel32)
   (boolean rv (if rv
                 version-info
                 (error "Error requesting Windows NT version")))
-  (version-info (& os-version-info-ex :inout)
-                :aux (os-version-info-ex)))
+  (version-info (& os-version-info :inout)
+                :aux (os-version-info)))
 
-(define-symbol-macro os-version-ex (os-version-ex))
+(define-symbol-macro os-version* (os-version*))
 
-(let ((info os-version-ex))
+(let ((info os-version*))
   (when info
     (pushnew (case (osverinfo-major-version info)
                (5 (case (osverinfo-minor-version info)

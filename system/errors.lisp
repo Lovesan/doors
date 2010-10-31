@@ -172,7 +172,7 @@
   (timeout dword))
 
 (define-external-function
-    ("FlashWindowEx" (:camel-case))
+    ("FlashWindowEx" flash-window*)
     (:stdcall user32)
   (boolean)
   (fwinfo (& flash-window-info)))

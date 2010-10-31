@@ -108,12 +108,12 @@
   (font-size coord))
 
 
-(define-struct (console-font-info-ex
-                 (:conc-name console-ex-))
+(define-struct (console-font-info*                 
+                 (:conc-name console-))
     "Contains extended information for a console font."
-  (font-info-struct-size ulong :initform (sizeof 'console-font-info-ex))
-  (font dword)
-  (font-size coord)
+  (font-info-struct-size ulong :initform (sizeof 'console-font-info*))
+  (font* dword)
+  (font-size* coord)
   (font-family uint)
   (font-weight uint)
   (face-name (wstring 32)))
@@ -169,20 +169,20 @@
   (window small-rect)
   (maximum-window-size coord))
 
-(define-struct (console-screen-buffer-info-ex
-                 (:constructor make-console-screen-buffer-info-ex
-                               (&key size cursor-position attributes
-                                window maximum-window-size popup-attributes
+(define-struct (console-screen-buffer-info*
+                 (:constructor make-console-screen-buffer-info*
+                               (&key size* cursor-position* attributes*
+                                window* maximum-window-size* popup-attributes
                                 fill-screen-supported color-table))
-                 (:conc-name console-sb-ex-))
+                 (:conc-name console-sb-))
     "Contains extended information about a console screen buffer."
   (struct-size ulong
-               :initform (sizeof 'console-screen-buffer-info-ex))
-  (size coord)
-  (cursor-position coord)
-  (attributes char-attributes)
-  (window small-rect)
-  (maximum-window-size coord)
+               :initform (sizeof 'console-screen-buffer-info*))
+  (size* coord)
+  (cursor-position* coord)
+  (attributes* char-attributes)
+  (window* small-rect)
+  (maximum-window-size* coord)
   (popup-attributes char-attributes)
   (fill-screen-supported bool)
   (color-table (simple-array dword (16))))
@@ -582,16 +582,16 @@
 
 #-(or win2000 winxp winxp64 winserver2003 winhomeserver)
 (define-external-function
-    ("GetConsoleScreenBufferInfoEx" console-screen-buffer-info-ex)
+    ("GetConsoleScreenBufferInfoEx" console-screen-buffer-info*)
     (:stdcall kernel32)
   ((last-error bool) rv info)
   "Retrieves extended information about the specified console screen buffer."
   (console-output handle :optional (std-handle :output-handle))
-  (info (& console-screen-buffer-info-ex :out) :aux))
+  (info (& console-screen-buffer-info* :out) :aux))
 
 #-win2000
-(define-symbol-macro console-screen-buffer-info-ex
-    (console-screen-buffer-info-ex))
+(define-symbol-macro console-screen-buffer-info*
+    (console-screen-buffer-info*))
 
 #-win2000
 (define-external-function
@@ -639,16 +639,16 @@
 
 #-win2000
 (define-external-function
-    ("GetCurrentConsoleFontEx" current-console-font-ex)
+    ("GetCurrentConsoleFontEx" current-console-font*)
     (:stdcall kernel32)
   ((last-error bool) rv info)
   "Retrieves extended information about the current console font."
   (console-output handle :optional (std-handle :output-handle))
   (maximum-window-size bool :optional)
-  (info (& console-font-info-ex :out) :aux))
+  (info (& console-font-info* :out) :aux))
 
 #-win2000
-(define-symbol-macro current-console-font-ex (current-console-font-ex))
+(define-symbol-macro current-console-font* (current-console-font*))
 
 (define-external-function
     ("GetLargestConsoleWindowSize" largest-console-window-size)
@@ -853,12 +853,12 @@
 
 #-(or win2000 winxp winxp64 winhomeserver winserver2003)
 (define-external-function
-    ("SetConsoleScreenBufferInfoEx" (setf console-screen-buffer-info-ex))
+    ("SetConsoleScreenBufferInfoEx" (setf console-screen-buffer-info*))
     (:stdcall kernel32)
   ((last-error bool) rv info)
   "Sets extended information about the specified console screen buffer."
   (console-output handle :optional (std-handle :output-handle))
-  (info (& console-screen-buffer-info-ex)))
+  (info (& console-screen-buffer-info*)))
 
 (define-external-function
     ("SetConsoleScreenBufferSize" (setf console-screen-buffer-size))
@@ -911,13 +911,13 @@
 
 #-(or win2000 winxp winxp64 winserver2003 winhomeserver)
 (define-external-function
-    ("SetCurrentConsoleFontEx" (setf current-console-font-ex))
+    ("SetCurrentConsoleFontEx" (setf current-console-font*))
     (:stdcall kernel32)
   ((last-error bool) rv info)
   "Sets extended information about the current console font."
   (console-output handle :optional (std-handle :output-handle))
   (maximum-window bool :optional)
-  (info (& console-current-font-ex)))
+  (info (& console-current-font*)))
 
 (define-external-function
     (#+doors.unicode "WriteConsoleW"
