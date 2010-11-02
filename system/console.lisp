@@ -220,7 +220,7 @@
 
 (define-struct (menu-event-record
                  (:conc-name menu-event-)
-                 (:constructor make-menu-event-record ()))
+                 (:constructor make-menu-event-record))
     "Describes a menu event in a console. These events are used internally and should be ignored."
   (command-id uint))
 

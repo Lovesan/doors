@@ -56,7 +56,7 @@
   (:workstation #x00000001))
 
 (define-struct (os-version-info
-                 (:constructor os-version-info ())
+                 (:constructor os-version-info)
                  (:conc-name osverinfo-))
   (size dword :initform (sizeof 'os-version-info))
   (major-version dword)
