@@ -228,7 +228,7 @@
     ("SetErrorMode" (setf error-mode))
     (:stdcall kernel32)
   (system-error-mode)
-  (system-error-mode))
+  (new-mode system-error-mode))
 
 #-(or :win2000 :winxp :winx64 :winserver2003 :winhomeserver
       :winvista :winserver2008)
@@ -236,7 +236,7 @@
     ("SetThreadErrorMode" (setf thread-error-mode))
     (:stdcall kernel32)
   (system-error-mode)
-  (system-error-mode))
+  (new-mode system-error-mode))
 
 (define-symbol-macro error-mode (error-mode))
 (define-symbol-macro thread-error-mode (thread-error-mode))

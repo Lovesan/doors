@@ -106,8 +106,8 @@
   "Retrieves a module handle for the specified module. The module must have been loaded by the calling process."
   (flags module-handle-flags)
   (module-name (union ()
-                      pointer
-                      (& tstring :in t))
+                      (ptr pointer)
+                      (name (& tstring :in t)))
                :optional void)
   (module (& handle :out) :aux))
 

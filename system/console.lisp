@@ -291,9 +291,9 @@
 (define-enum (std-handle
                (:base-type dword)
                (:conc-name std-))
-  (:input-handle (logand #xFFFFFFFF -10))
-  (:output-handle (logand #xFFFFFFFF -11))
-  (:error-handle (logand #xFFFFFFFF -12)))
+  (:input-handle  #xFFFFFFF6)
+  (:output-handle #xFFFFFFF5)
+  (:error-handle  #xFFFFFFF4))
 
 (define-external-function
     ("GetStdHandle" std-handle)
@@ -563,8 +563,8 @@
      (external-function-call "GetConsoleProcessList"
        ((:stdcall kernel32)
         (dword rv (subseq new-list 0 rv))
-        (new-list (& (~ dword) :out) :aux (make-list count))
-        (count dword :aux rv)))))
+        ((& (~ dword) :out) new-list :aux (make-list count))
+        (dword count :aux rv)))))
   "Retrieves a list of the processes attached to the current console."
   (list (& (~ dword) :out) :aux '())
   (process-count dword :aux 0))
@@ -840,7 +840,7 @@
     (:stdcall kernel32)
   ((last-error bool) rv new-screen-buffer-dims)
   (console-output handle :optional (std-handle :output-handle))
-  (flags console-display-mode)
+  (flags console-display-mode-flags)
   (new-screen-buffer-dims (& coord :out) :aux))
 
 #-(or win2000 winxp winxp64 winhomeserver winserver2003)
@@ -917,7 +917,7 @@
   "Sets extended information about the current console font."
   (console-output handle :optional (std-handle :output-handle))
   (maximum-window bool :optional)
-  (info (& console-current-font*)))
+  (info (& console-font-info*)))
 
 (define-external-function
     (#+doors.unicode "WriteConsoleW"

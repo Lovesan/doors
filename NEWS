@@ -1,3 +1,7 @@
+v0.2.3
+    * Fixed various bugs and misprints. Now the library could be compiled
+        under Vista and Win7.
+
 v0.2.2
     * All struct constructors w/o parameters were replaced by constructors
         with keyword parameters, so the library could be built on CCL

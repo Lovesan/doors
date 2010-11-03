@@ -129,14 +129,13 @@
 (deftype uuid () 'guid)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defvar *guid-constants* (make-hash-table :test #'equalp)))
-
-(defmethod make-load-form ((object guid) &optional env)
-  (declare (ignore env))
-  (or (gethash object *guid-constants*)
-      (with-guid-accessors (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8)
-        object
-        `(guid ,dw ,w1 ,w2 ,b1 ,b2 ,b3 ,b4 ,b5 ,b6 ,b7 ,b8))))
+  (defvar *guid-constants* (make-hash-table :test #'equalp))
+  (defmethod make-load-form ((object guid) &optional env)
+    (declare (ignore env))
+    (or (gethash object *guid-constants*)
+        (with-guid-accessors (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8)
+          object
+          `(guid ,dw ,w1 ,w2 ,b1 ,b2 ,b3 ,b4 ,b5 ,b6 ,b7 ,b8)))))
 
 (defmacro define-guid (name dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8)
   (check-type name symbol)
