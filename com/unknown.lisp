@@ -39,7 +39,7 @@
   #xC0 #x00 #x00 #x00 #x00 #x00 #x00 #x46)
 
 (define-interface unknown (iid-unknown)
-  "Lisp wrapper for IUnknown inteface"
+  "Lisp wrapper for IUnknown interface"
   (query-interface
     (hresult rv
       (translate-interface

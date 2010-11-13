@@ -24,31 +24,18 @@
 
 (in-package #:doors)
 
-(define-foreign-library ntdll
-  (T (:default "ntdll")))
-
-(define-foreign-library kernel32
-  (T (:default "kernel32")))
-
-(define-foreign-library user32
-  (T (:default "user32")))
-
-(define-foreign-library gdi32
-  (T (:default "gdi32")))
-
-(define-foreign-library ws2-32
-  (T (:default "ws2_32")))
-
-(define-foreign-library advapi32
-  (T (:default "advapi32")))
-
-(define-foreign-library psapi
-  (t (:default "psapi")))
-
-(use-foreign-library ntdll)
-(use-foreign-library kernel32)
-(use-foreign-library user32)
-(use-foreign-library gdi32)
-(use-foreign-library ws2-32)
-(use-foreign-library advapi32)
-(use-foreign-library psapi)
+(define-enum (memory-protection-flags
+               (:base-type dword)
+               (:list t)
+               (:conc-name page-))
+  (:execute #x10)
+  (:execute-read #x20)
+  (:execute-read-write #x40)
+  (:execute-read-write-copy #x80)
+  (:no-access #x1)
+  (:read-only #x02)
+  (:read-write #x04)
+  (:write-copy #x08)
+  (:guard #x100)
+  (:no-cache #x200)
+  (:write-combine #x400))

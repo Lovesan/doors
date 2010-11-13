@@ -99,7 +99,9 @@
                (format stream
                        "Status: ~:[Success~;Failure~] ~_Facility: ~a ~_Code: ~4,'0X~:[~; ~_~:*~a~]"
                        (hresult-error-p code)
-                       (hresult-facility code)
+                       (if (logbitp 30 code)
+                         "NT"
+                         (hresult-facility code))
                        (hresult-code code)
                        (or (when (eq :win32 (hresult-facility code))
                              (let ((code (hresult-code code)))

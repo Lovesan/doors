@@ -38,6 +38,8 @@
 (define-results windows-error (error)
   ()
   ((success 0 "No error occurred")
+   (invalid-info-class #xC0000003
+     "The specified information class is not a valid information class for the specified object.")
    (unexpected-failure #x8000FFFF
      "Catastrophic failure")
    (not-implemented #x80004001
@@ -52,6 +54,8 @@
      "Invalid pointer")
    (invalid-handle #x80070006
      "Invalid handle")
+   (bad-length #x80070018
+     "The program issued a command but the command length is incorrect.")
    (insufficient-buffer #x8007007A
      "The data area passed to a system call is too small")
    (abort #x80004004
@@ -120,7 +124,7 @@
 
 (define-external-function "Beep"
     (:stdcall kernel32)
-  ((last-error boolean))
+  ((last-error bool))
   (frequency dword)
   (duration dword))
 
@@ -148,11 +152,12 @@
 (define-external-function
     ("FlashWindow" (:camel-case))
     (:stdcall user32)
-  (boolean)
+  (bool)
   (hwnd handle)
   (invert boolean))
 
 (define-enum (flash-window-flags
+               (:list t)
                (:conc-name flashw-))
   (:stop 0)
   (:caption 1)
@@ -174,11 +179,12 @@
 (define-external-function
     ("FlashWindowEx" flash-window*)
     (:stdcall user32)
-  (boolean)
+  (bool)
   (fwinfo (& flash-window-info)))
 
 (define-enum (format-message-flags
                (:base-type dword)
+               (:list t)
                (:conc-name format-message-))
   (:allocate-buffer #x00000100)
   (:argument-array  #x00002000)
@@ -204,6 +210,7 @@
 
 (define-enum (system-error-mode
                (:conc-name sem-)
+               (:list t)
                (:base-type uint))
   (:fail-critical-errors 1)
   (:no-alignment-fault-exception 4)
@@ -238,13 +245,16 @@
   (system-error-mode)
   (new-mode system-error-mode))
 
+#-(or :win2000 :winxp :winx64 :winserver2003 :winhomeserver)
 (define-symbol-macro error-mode (error-mode))
+#-(or :win2000 :winxp :winx64 :winserver2003 :winhomeserver
+      :winvista :winserver2008)
 (define-symbol-macro thread-error-mode (thread-error-mode))
 
 (define-external-function
     ("MessageBeep" (:camel-case))
     (:stdcall user32)
-  ((last-error boolean))
+  ((last-error bool))
   (type (enum (:base-type uint)
               (:simple #xFFFFFFFF)
               (:asterisk #x40)

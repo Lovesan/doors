@@ -106,7 +106,7 @@
     #:facility-meta-directory
     #:facility-windows-update
     #:facility-directory-service
-
+    
     #:make-hresult
     #:hresult-from-win32
     #:hresult-from-nt
@@ -127,7 +127,7 @@
 
     #:windows-error
     #:windows-error-code
-
+    
     #:error-success
     #:error-unexpected-failure
     #:error-not-implemented
@@ -487,27 +487,6 @@
     #:read-transfer-count
     #:write-transfer-count
     #:other-transfer-count
-    #:ldr-data-table-entry
-    #:ldr-data-flink
-    #:ldr-data-blink
-    #:ldr-data-dll-base
-    #:ldr-data-entry-point
-    #:ldr-data-full-dll-name
-    #:ldr-data-checksum
-    #:ldr-data-time-date-stamp
-    #:peb-ldr-data
-    #:ldr-flink
-    #:ldr-blink
-    #:user-process-parameters
-    #:user-process-image-path-name
-    #:user-process-command-line
-    #:peb
-    #:peb-being-debugged
-    #:peb-ldr
-    #:peb-loader-data
-    #:peb-process-parameters
-    #:peb-post-process-init-routine
-    #:peb-session-id
     #:process-information
     #:make-process-information
     #:process-info-handle
@@ -547,7 +526,6 @@
     #:startup-info*
     #:make-startup-info*
     #:startup-info-attribute-list
-    #:teb
     #:process-creation-flags
     #:create-break-away-from-job
     #:create-default-error-mode
@@ -623,4 +601,102 @@
     #:process-affinity-update-mode
     #:process-cycle-time
     #:terminate-process
+    
+    ;;PSAPI stuff
+    #:page-file-information
+    #:make-page-file-info
+    #:page-file-info-total-size
+    #:page-file-info-total-in-use
+    #:page-file-info-peak-usage
+    #:module-info
+    #:make-module-info
+    #:module-base-of-dll
+    #:module-size-of-image
+    #:module-entry-point
+    #:performance-information
+    #:make-performance-info
+    #:perf-info-commit-total
+    #:perf-info-commit-limit
+    #:perf-info-commit-peak
+    #:perf-info-physical-total
+    #:perf-info-physical-available
+    #:perf-info-system-cache
+    #:perf-info-kernel-total
+    #:perf-info-kernel-paged
+    #:perf-info-kernel-nonpaged
+    #:perf-info-page-size
+    #:perf-info-handle-count
+    #:perf-info-process-count
+    #:perf-info-thread-count
+    #:process-memory-counters
+    #:make-process-memory-counters
+    #:process-mc-page-fault-count
+    #:process-mc-working-set-size
+    #:process-mc-quota-peak-paged-pool-usage
+    #:process-mc-quota-paged-pool-usage
+    #:process-mc-quota-peak-nonpaged-pool-usage
+    #:process-mc-quota-nonpaged-pool-usage
+    #:process-mc-pagefile-usage
+    #:process-mc-peak-pagefile-usage
+    #:process-memory-counters*
+    #:make-process-memory-counters*
+    #:process-mc-private-usage
+    #:ws-block-protection-flags
+    #:ws-block-read
+    #:ws-block-execute
+    #:ws-block-read/write
+    #:ws-block-copy-on-write
+    #:ws-block-non-cachable
+    #:ws-block-guard-page
+    #:working-set-block-information
+    #:make-working-set-block-information
+    #:ws-block-info-virtual-page
+    #:ws-block-info-protection
+    #:ws-block-info-share-count
+    #:ws-block-info-shared-p
+    #:working-set-block-information*
+    #:make-working-set-block-information*
+    #:ws-block-info-node
+    #:ws-block-info-valid-p
+    #:ws-block-info-share-count*
+    #:ws-block-info-protection*
+    #:ws-block-info-shared-p*
+    #:ws-block-info-locked-p
+    #:ws-block-info-large-page-p
+    #:working-set-information*
+    #:make-working-set-information*
+    #:ws-info-virtual-address
+    #:ws-info-virtual-attributes
+    #:ws-watch-information
+    #:make-ws-watch-information
+    #:ws-watch-info-faulting-pc
+    #:ws-watch-info-faulting-va
+    #:ws-watch-information*
+    #:make-ws-watch-information*
+    #:ws-watch-info-faulting-thread-id
+    #:empty-working-set
+    #:enum-device-drivers
+    #:device-driver-file-name
+    #:enum-page-files
+    #:enum-processes
+    #:enum-process-modules
+    #:list-modules-flag
+    #:list-modules-default
+    #:list-modules-32bit
+    #:list-modules-64bit
+    #:list-modules-all
+    #:enum-process-modules*
+    #:device-driver-base-name
+    #:mapped-file-name
+    #:module-base-name
+    #:module-file-name*
+    #:module-information
+    #:performance-info
+    #:process-image-file-name
+    #:process-memory-info
+    #:ws-changes
+    #:ws-changes*
+    #:initialize-process-ws-watch
+    #:query-working-set
+    #:query-working-set*    
     ))

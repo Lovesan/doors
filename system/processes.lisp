@@ -51,67 +51,6 @@
   (write-transfer-count ullong)
   (other-transfer-count ullong))
 
-(define-struct (ldr-data-table-entry
-                 (:conc-name ldr-data-))
-  (reserved1 (simple-array size-t (2)))
-  (flink (& ldr-data-table-entry :inout t))
-  (blink (& ldr-data-table-entry :inout t))
-  (reserved2 (simple-array size-t (2)))
-  (dll-base pointer)
-  (entry-point pointer)
-  (reserved3 size-t)
-  (full-dll-name doors.security:wstring*)
-  (reserved4 (simple-array byte (8)))
-  (reserved5 (simple-array size-t (3)))
-  (checksum ulong)
-  #+x86-64
-  (reserved6 dword)
-  (time-date-stamp ulong))
-
-(define-struct (peb-ldr-data
-                 (:conc-name ldr-))
-    "Contains information about the loaded modules for the process"
-  (reserved1 (simple-array uint8 (8)))
-  (reserved2 (simple-array size-t (3)))
-  (flink (& ldr-data-table-entry :inout t))
-  (blink (& ldr-data-table-entry :inout t)))
-
-(define-struct (user-process-parameters
-                 (:conc-name user-process-))
-  (reserved1 (simple-array byte (16)))
-  (reserved2 (simple-array size-t (10)))
-  (image-path-name doors.security:wstring*)
-  (command-line doors.security:wstring*))
-
-#-x86-64
-(define-struct (peb)
-    "Contains process information."
-  (reserved1 (simple-array byte (2)))
-  (being-debugged byte)
-  (reserved2 byte)
-  (reserved3 (simple-array size-t (2)))
-  (ldr (& peb-ldr-data))
-  (process-parameters (& user-process-parameters))
-  (reserved4 (simple-array byte (104)))
-  (reserved5 (simple-array size-t (52)))
-  (post-process-init-routine pointer)
-  (reserved6 (simple-array byte (128)))
-  (reserved7 pointer)
-  (session-id ulong))
-
-#+x86-64
-(define-struct (peb)
-    "Contains process information."
-  (reserved1 (simple-array byte (2)))
-  (being-debugged byte)
-  (reserved2 (simple-array byte (21)))
-  (loader-data (& ldr-data))
-  (process-parameters (& user-process-parameters))
-  (reserved3 (simple-array byte (520)))
-  (post-process-init-routine pointer)
-  (reserved4 (simple-array byte (136)))
-  (session-id ulong))
-
 (define-struct (process-information
                  (:conc-name process-info-))
     "Contains information about a newly created process and its primary thread."
@@ -180,19 +119,10 @@
   (stdout handle)
   (stderror handle))
 
+(declaim (inline %startup-info-cleaner))
 (defun %startup-info-cleaner (pointer value)
-  (declare (type pointer pointer)
-           (ignore value))
-  (let ((pdesktop (deref pointer 'pointer (offsetof 'startup-info
-                                                    'desktop)))
-        (ptitle (deref pointer 'pointer (offsetof 'startup-info
-                                                  'title))))
-    (declare (type pointer pdesktop ptitle))
-    (when (&? pdesktop)
-      (free pdesktop 'tstring))
-    (when (&? ptitle)
-      (free ptitle 'tstring))
-    nil))
+  (declare (ignore pointer value))
+  nil)
 
 ;;This is neccesary because extensive inlining of big structure translators
 ;;cause slow compilation and even may cause some lisp compilers to hang or crash
@@ -251,17 +181,6 @@
                                 attribute-list &aux (cb (sizeof 'startup-info*)))))
     "Specifies the window station, desktop, standard handles, and attributes for a new process. "
   (attribute-list thread-attribute-list))
-
-(define-struct (teb)
-    "Describes the state of a thread."
-  (reserved1 (simple-array byte (1952)))
-  (reserved2 (simple-array size-t (412)))
-  (tls-slots (simple-array size-t (64)))
-  (reserved3 (simple-array byte (8)))
-  (reserved4 (simple-array size-t (26)))
-  (reserved-for-ole pointer)
-  (reserved5 (simple-array size-t (4)))
-  (tls-expansion-slots pointer))
 
 (define-enum (process-creation-flags
                (:conc-name create-)
@@ -533,7 +452,7 @@
         (if rv
           (make-array 0 :element-type 'ushort
             :initial-element 0)
-          (let ((last-error-code last-error))
+          (let ((last-error-code (hresult-from-win32 last-error)))
             (if (= last-error-code error-insufficient-buffer)
               (external-function-call "GetProcessGroupAffinity"
                 ((:stdcall kernel32)

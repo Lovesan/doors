@@ -23,7 +23,7 @@
 ;;; DEALINGS IN THE SOFTWARE.
 
 (asdf:defsystem #:doors
-  :version "0.2.3"
+  :version "0.3.0"
   :description "Doors, a lisper's gateway to Windows"
   :author "Dmitry Ignatiev <lovesan.ru@gmail.com>"
   :maintainer "Dmitry Ignatiev <lovesan.ru@gmail.com>"
@@ -62,7 +62,10 @@
                         :pathname "system"
                         :serial t
                         :components ((:file "console")
-                                     (:file "processes")))
+                                     (:file "memory")
+                                     (:file "processes")
+                                     (:file "psapi")
+                                     ))
                ;(:module "com-aux"
                ;         :pathname "com"
                ;         :components ())

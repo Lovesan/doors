@@ -307,7 +307,7 @@
      #-doors.unicode "AddConsoleAliasW"
                    add-console-alias)
     (:stdcall kernel32)
-  ((last-error boolean))
+  ((last-error bool))
   "Defines a console alias for the specified executable."
   (source (& tstring))
   (target (& tstring :in t))
@@ -316,14 +316,14 @@
 (define-external-function
     ("AllocConsole" (:camel-case))
     (:stdcall kernel32)  
-  ((last-error boolean))
+  ((last-error bool))
   "Allocates a new console for the calling process.")
 
 #-win2000
 (define-external-function
     ("AttachConsole" (:camel-case))
     (:stdcall kernel32)
-  ((last-error boolean))
+  ((last-error bool))
   "Attaches the calling process to the console of the specified process."
   (process-id (enum (:base-type dword)
                 (:attach-parent-process #xFFFFFFFF))))
@@ -336,11 +336,11 @@
   (desired-access (enum (:base-type dword :list t)
                         (:generic-read  #x80000000)
                         (:generic-write #x40000000))
-                  :key #xC0000000)
+                  :key '(:generic-read :generic-write))
   (share-mode (enum (:base-type dword :list t)
                     (:file-share-read 1)
                     (:file-share-write 2))
-              :key 0)
+              :key '())
   (security-attributes (& doors.security:security-attributes :in t) :key void)
   (flags dword :aux 1)
   (screen-buffer-data pointer :aux &0))
@@ -348,7 +348,7 @@
 (define-external-function
     ("FillConsoleOutputAttribute" (:camel-case))
     (:stdcall kernel32)
-  ((last-error boolean) rv number-of-attrs-written)
+  ((last-error bool) rv number-of-attrs-written)
   "Sets the character attributes for a specified number of character cells, beginning at the specified coordinates in a screen buffer."
   (console-output handle :optional (std-handle :output-handle))
   (attribute char-attributes)
@@ -572,7 +572,7 @@
 (define-external-function
     ("GetConsoleScreenBufferInfo" console-screen-buffer-info)
     (:stdcall kernel32)
-  ((last-error boolean) rv info)
+  ((last-error bool) rv info)
   "Retrieves information about the specified console screen buffer."
   (console-output handle :optional (std-handle :output-handle))
   (info (& console-screen-buffer-info :out) :aux))
@@ -659,7 +659,7 @@
   "Retrieves the size of the largest possible console window, based on the current font and the size of the display."
   (console-output handle :optional (std-handle :output-handle)))
 
-(define-symbol-macro larget-console-window-size (largest-console-window-size))
+(define-symbol-macro largest-console-window-size (largest-console-window-size))
 
 (define-external-function
     ("GetNumberOfConsoleInputEvents" number-of-console-input-events)
@@ -863,7 +863,7 @@
 (define-external-function
     ("SetConsoleScreenBufferSize" (setf console-screen-buffer-size))
     (:stdcall kernel32)
-  ((last-error bool) rv size-coord)
+  ((last-error bool) rv (coord-from-dword size-coord))
   "Changes the size of the specified console screen buffer."
   (console-output handle :optional (std-handle :output-handle))
   (size-coord dword))

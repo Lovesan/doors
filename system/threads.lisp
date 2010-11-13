@@ -24,31 +24,16 @@
 
 (in-package #:doors)
 
-(define-foreign-library ntdll
-  (T (:default "ntdll")))
-
-(define-foreign-library kernel32
-  (T (:default "kernel32")))
-
-(define-foreign-library user32
-  (T (:default "user32")))
-
-(define-foreign-library gdi32
-  (T (:default "gdi32")))
-
-(define-foreign-library ws2-32
-  (T (:default "ws2_32")))
-
-(define-foreign-library advapi32
-  (T (:default "advapi32")))
-
-(define-foreign-library psapi
-  (t (:default "psapi")))
-
-(use-foreign-library ntdll)
-(use-foreign-library kernel32)
-(use-foreign-library user32)
-(use-foreign-library gdi32)
-(use-foreign-library ws2-32)
-(use-foreign-library advapi32)
-(use-foreign-library psapi)
+(define-external-function
+    ("AttachThreadInput" (:camel-case))
+    (:stdcall kernel32)
+  (bool rv (if rv
+             attach
+             #-(or win2000 winxp winxp64 winserver2003 winhomeserver)
+             (error 'windows-error :code (hresult-from-win32 last-error))
+             #+(or win2000 winxp winxp64 winserver2003 winhomeserver)
+             (error 'windows-error :code error-invalid-arg)))
+  "Attaches or detaches the input processing mechanism of one thread to that of another thread."
+  (id-attach dword)
+  (id-attach-to dword)
+  (attach boolean))

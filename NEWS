@@ -1,3 +1,8 @@
+v0.3.0
+    * Fixed some misprints in src/console.lisp
+    * PEB, TEB and associated structures were removed
+    * Added PSAPI bindings
+
 v0.2.3
     * Fixed various bugs and misprints. Now the library could be compiled
         under Vista and Win7.

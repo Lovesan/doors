@@ -89,7 +89,7 @@
      #-doors.unicode "GetVersionExA"
                  os-version*)
     (:stdcall kernel32)
-  (boolean rv (if rv
+  (bool rv (if rv
                 version-info
                 (error "Error requesting Windows NT version")))
   (version-info (& os-version-info :inout)
