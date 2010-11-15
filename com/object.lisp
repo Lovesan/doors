@@ -85,7 +85,7 @@
         (when (= ref-count 1)
           (let* ((registry-length (length *registered-com-objects*))
                  (pos (position object *registered-com-objects* :test #'eq)))
-            (when (> pos (1+ registry-length))
+            (when (< pos (1- registry-length))
               (replace *registered-com-objects*
                        *registered-com-objects*
                        :start1 pos :start2 (1+ pos)))

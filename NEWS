@@ -1,3 +1,6 @@
+v0.3.1
+    * bug fix: Fixed COM-OBJECT's RELEASE method
+
 v0.3.0
     * Fixed some misprints in src/console.lisp
     * PEB, TEB and associated structures were removed
