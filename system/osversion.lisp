@@ -104,18 +104,16 @@
                     (0 :win2000)
                     (1 :winxp)
                     (2 (cond
-                         ((eq (osverinfo-product-type info) :workstation)
+                         ((member :workstation (osverinfo-product-type info))
                           :winxp64)
                          ((member :home-server (osverinfo-suite-mask info))
                           :winhomeserver)
                          (T :winserver2003)))))
                (6 (case (osverinfo-minor-version info)
-                    (0 (if (eq (osverinfo-product-type info)
-                               :workstation)
+                    (0 (if (member :workstation (osverinfo-product-type info))
                          :winvista
                          :winserver2008))
-                    (1 (if (eq (osverinfo-product-type info)
-                               :workstation)
+                    (1 (if (member :workstation (osverinfo-product-type info))
                          :win7
                          :winserver2008r2))
                     (T :windows)))

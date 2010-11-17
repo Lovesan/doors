@@ -1,3 +1,6 @@
+v0.3.2
+    * bug fix: The process of determining OS version was erroneous
+
 v0.3.1
     * bug fix: Fixed COM-OBJECT's RELEASE method
 

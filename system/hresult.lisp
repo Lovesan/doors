@@ -183,8 +183,7 @@
              (condition (make-condition
                           (or condition-name
                               (if errorp 'windows-error 'windows-status))
-                          :code value
-                          :hresult-p t)))
+                          :code value)))
         (if errorp
           (error condition)
           (warn condition)))))
