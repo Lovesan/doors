@@ -22,41 +22,28 @@
 ;;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;;; DEALINGS IN THE SOFTWARE
 
-(in-package #:doors)
+(in-package #:doors.com)
 
-(define-foreign-library ntdll
-  (T (:default "ntdll")))
+(define-results com-error (windows-error)
+  ()
+  ((not-implemented #x80004001
+     "Not implemented")
+   (no-interface #x80004002
+     "No such interface supported")
+   (invalid-pointer #x80004003
+     "Invalid pointer")
+   (abort #x80004004
+     "Operation aborted")
+   (failure #x80004005
+     "Unspecified error")
+   (data-pending #x8000000A
+     "The data necessary to complete this operation is not yet available")
+   (class-not-available #x8040111
+     "ClassFactory cannot supply requested class")
+   (class-not-registered #x80040154
+     "Class not registered"))
+  (:conc-name error-))
 
-(define-foreign-library kernel32
-  (T (:default "kernel32")))
-
-(define-foreign-library user32
-  (T (:default "user32")))
-
-(define-foreign-library gdi32
-  (T (:default "gdi32")))
-
-(define-foreign-library ws2-32
-  (T (:default "ws2_32")))
-
-(define-foreign-library advapi32
-  (T (:default "advapi32")))
-
-(define-foreign-library psapi
-  (t (:default "psapi")))
-
-(define-foreign-library ole32
-  (t (:default "ole32")))
-
-(define-foreign-library secur32
-  (t (:default "secur32")))
-
-(use-foreign-library ntdll)
-(use-foreign-library kernel32)
-(use-foreign-library user32)
-(use-foreign-library gdi32)
-(use-foreign-library ws2-32)
-(use-foreign-library advapi32)
-(use-foreign-library psapi)
-(use-foreign-library ole32)
-(use-foreign-library secur32)
+(defun com-error-code (error)
+  (declare (type com-error error))
+  (slot-value error 'code))

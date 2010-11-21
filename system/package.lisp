@@ -34,6 +34,9 @@
     #:gdi32
     #:ws2-32
     #:advapi32
+    #:psapi
+    #:ole32
+    #:secur32
       
     ;;windows types
     #:word
@@ -130,16 +133,15 @@
     
     #:error-success
     #:error-unexpected-failure
-    #:error-not-implemented
+    #:error-invalid-info-class
     #:error-out-of-memory
     #:error-invalid-arg
-    #:error-no-interface
-    #:error-invalid-pointer
     #:error-invalid-handle
-    #:error-abort
-    #:error-failure
+    #:error-bad-length
+    #:error-incufficient-buffer
+    #:error-buffer-overflow
     #:error-access-denied
-    #:error-data-pending
+    #:error-more-data
     
     #:last-error
     #:invoke-last-error
@@ -204,7 +206,7 @@
     #:ver-nt-server
     #:ver-nt-workstation
     #:os-version-info
-    #:osverinfo-size
+    #:make-os-version-info
     #:osverinfo-major-version
     #:osverinfo-minor-version
     #:osverinfo-build-number
@@ -217,6 +219,8 @@
     
     ;;guid and friends    
     #:guid
+    #:guidp
+    #:make-guid
     #:guid-dw
     #:guid-w1
     #:guid-w2
@@ -246,6 +250,59 @@
     #:handle-flag-inherit
     #:handle-flag-protect-from-close
     #:handle-information
+        
+    ;;time stuff
+    #:file-time
+    #:make-file-time
+    #:make-file-time*
+    #:low-date-time
+    #:high-date-time
+    #:quad-date-time
+    #:system-time
+    #:make-system-time
+    #:system-time-year
+    #:system-time-month
+    #:system-time-day-of-week
+    #:system-time-day
+    #:system-time-hour
+    #:system-time-minute
+    #:system-time-second
+    #:system-time-millisecond
+    #:time-zone-information
+    #:make-time-zone-information
+    #:time-zone-bias
+    #:time-zone-standard-name
+    #:time-zone-standard-date
+    #:time-zone-standard-bias
+    #:time-zone-daylight-name
+    #:time-zone-daylight-date
+    #:time-zone-daylight-bias
+    #:dynamic-time-zone-information
+    #:time-zone-key-name
+    #:time-zone-dynamic-daylight-time-disabled-p
+    #:system-time
+    #:system-time-adjustment
+    #:compare-file-time
+    #:dos-date-time-to-file-time
+    #:file-time-to-dos-date-time
+    #:file-time-to-local-file-time
+    #:file-time-to-system-time
+    #:time-zone-id
+    #:time-zone-id-unknown
+    #:time-zone-id-standard
+    #:time-zone-id-daylight
+    #:time-zone-id-invalid
+    #:local-time
+    #:system-time-as-file-time
+    #:system-times
+    #:tick-count
+    #:tick-count*
+    #:time-zone-information-for-year
+    #:local-file-time-to-file-time
+    #:unbiased-interrupt-time
+    #:system-time-to-file-time
+    #:system-time-to-tz-specific-local-time
+    #:tz-specific-local-time-to-system-time
     
     ;;console stuff
     #:console-event

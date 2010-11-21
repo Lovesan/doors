@@ -73,9 +73,9 @@
   `(,method-name
      ,@(if (consp method-name)
          `(,(car primary)
-             (gethash ,this-var *pointer-to-object-mapping*)
+             (gethash (&& ,this-var) *pointer-to-object-mapping*)
              ,@(rest primary))
-         `((gethash ,this-var *pointer-to-object-mapping*)
+         `((gethash (&& ,this-var) *pointer-to-object-mapping*)
            ,@primary))
      ,@optional
      ,@(loop :for name :in key :nconc
@@ -99,53 +99,78 @@
           (rv-var (gensym (string 'return-value))))
       (multiple-value-bind
           (normalized types primary key optional aux) (parse-args args)
-        `((defmethod ,method-name (,@(if (consp method-name)
-                                       `(,(car primary)
-                                           (,this-var ,interface-name)
-                                           ,@(rest primary))
-                                       `((,this-var ,interface-name)
-                                         ,@primary))
-                                      ,@(unless (null key)
-                                          (make-method-arg-group types key '&key))
-                                      ,@(unless (null optional)
-                                          (make-method-arg-group types optional '&optional))
-                                      ,@(unless (null aux)
-                                          (make-method-arg-group types aux '&aux)))
-            (declare (type ,interface-name ,this-var)
-                     ,@(loop :for (name lisp-type initform) :in types
-                        :collect `(type ,lisp-type ,name)))
-            ,@(ensure-list doc)
-            (external-pointer-call
-              (deref (&+ (deref (com-interface-pointer ,this-var) 'pointer)
-                      ,vtable-index
-                      'pointer)
-                     'pointer)
-              ((:stdcall)
-               (,return-type ,return-value-name ,result-form)
-               (,interface-name ,this-var :aux ,this-var)
-               ,@normalized)))
+        `((progn
+            (closer-mop:ensure-generic-function ',method-name
+              :generic-function-class 'com-generic-function
+              :lambda-list '(,@(if (consp method-name)
+                                 `(,(car primary)
+                                   ,this-var
+                                   ,@(rest primary))
+                                 `(,this-var ,@primary))
+                             ,@(when optional `(&optional ,@optional))
+                             ,@(when key `(&key ,@key)))
+              ,@(when doc `(:documentation ,doc)))
+            (defmethod ,method-name (,@(if (consp method-name)
+                                         `(,(car primary)
+                                             (,this-var ,interface-name)
+                                             ,@(rest primary))
+                                         `((,this-var ,interface-name)
+                                           ,@primary))
+                                        ,@(unless (null key)
+                                            (make-method-arg-group types key '&key))
+                                        ,@(unless (null optional)
+                                            (make-method-arg-group types optional '&optional))
+                                        ,@(unless (null aux)
+                                            (make-method-arg-group types aux '&aux)))
+              (declare (type ,interface-name ,this-var)
+                       ,@(loop :for (name lisp-type initform) :in types
+                           :collect `(type ,lisp-type ,name)))
+              (external-pointer-call
+                (deref (&+ (deref (com-interface-pointer ,this-var) 'pointer)
+                        ,vtable-index
+                        'pointer)
+                       'pointer)
+                ((:stdcall)
+                 (,return-type ,return-value-name ,result-form)
+                 (,interface-name ,this-var :aux ,this-var)
+                 ,@normalized))))
           ,@(let ((trampoline-name (make-internal-name
                                      (package-name *package*)
                                      interface-name
                                      method-name
                                      'trampoline))
+                  (warning (gensym "WARNING"))
+                  (status (gensym (string 'status)))
                   (condition (gensym (string 'condition))))
              `((progn (define-callback (,trampoline-name :stdcall) ,return-type
-                        ((,this-var size-t)
+                        ((,this-var pointer)
                          ,@(loop :for (arg-name arg-typespec . rest) :in args :collect
                              (list arg-name arg-typespec)))
-                        ,(let ((body `(let ((,rv-var ,(expand-prototype (parse-typespec return-type))))
-                                        (multiple-value-setq
-                                          (,rv-var ,@(mapcar #'car args))
-                                          ,(make-defmethod-call-form
-                                              method-name this-var primary optional key))
-                                        ,rv-var)))
+                        ,(let* ((rtype (parse-typespec return-type))
+                                (body `(let ((,rv-var ,(expand-prototype rtype)))
+                                         (multiple-value-setq
+                                           (,rv-var ,@(mapcar #'car args))
+                                           ,(make-defmethod-call-form
+                                                method-name this-var primary optional key))
+                                         ,rv-var)))
                            (if (eq return-type 'hresult)
-                             `(handler-case
-                                  ,body
-                                (windows-error (,condition) ,condition)
-                                (error () (make-condition 'windows-error
-                                             :code error-unexpected-failure)))
+                             `(let ((,status nil))
+                                (declare (type (or null windows-status) ,status))
+                                (handler-case
+                                    (handler-bind
+                                      ((windows-status
+                                         (lambda (,warning)
+                                           (when (null ,status)
+                                             (setf ,status (make-condition 'windows-status)))
+                                           (setf (windows-condition-code ,status)
+                                                 (windows-condition-code ,warning))
+                                           (muffle-warning ,warning))))
+                                      (or ,body ,status))
+                                  (windows-error (,condition) ,condition)
+                                  (error (e)
+                                         (format *error-output* "~&~a~%" e)
+                                         (make-condition 'windows-error
+                                           :code error-unexpected-failure))))
                              body)))
                       (setf (deref ,vtable-name 'pointer ,(* vtable-index (sizeof '*)))
                             (callback ,trampoline-name)))
@@ -154,7 +179,7 @@
 (defun make-iid-association-form (name iid-name)
   (etypecase iid-name
     (null nil nil)
-    (symbol (assert (typep (symbol-value iid-name) 'iid) ())
+    (symbol (assert (typep (symbol-value iid-name) 'guid) ())
             (values `(eval-when (:compile-toplevel :load-toplevel :execute)
                        (setf (gethash ,iid-name *iid-to-interface-class-mapping*)
                              (find-class ',name)))
@@ -175,7 +200,10 @@
   (check-type name-and-options (or symbol cons))
   (check-type iid (or symbol cons))
   (destructuring-bind
-      (name &key (vtable-name (intern (format nil "~a-~a" name 'vtable))))
+      (name &key (vtable-name (make-internal-name
+                                (package-name *package*)
+                                name
+                                'vtable)))
       (ensure-list name-and-options)
     (check-type name symbol)
     (check-type vtable-name symbol)
@@ -209,14 +237,17 @@
                   ,@(when doc `((:documentation ,doc))))
                 (closer-mop:finalize-inheritance (find-class ',name))
                 ,form
-                (setf (slot-value (find-class ',name) 'iid) ,iid-name)
+                (setf (slot-value (find-class ',name) '%iid) ,iid-name)
                 (define-type-parser ,name (&optional finalize)
                   (make-instance 'com-interface-type
                     :name ',name
                     :finalize finalize)))))
          ,@(let ((methods (append parent-methods direct-methods)))
-            `((define-struct (,vtable-name (:constructor ,vtable-name ,methods))
-                 ,@(mapcar (lambda (x) (list x 'pointer)) methods))
+            `((define-struct (,vtable-name
+                               ,@(when parent-vtable-name
+                                   `((:include ,parent-vtable-name)))
+                               (:constructor ,vtable-name ,methods))
+                 ,@(mapcar (lambda (x) (list x 'pointer)) direct-methods))
               (defvar ,vtable-name (alloc ',vtable-name))
               ,@(when parent
                  `((setf (deref ,vtable-name
@@ -255,8 +286,9 @@
                         :for child-vtable = (com-interface-class-vtable-name class)
                         :for child-methods = (com-interface-class-methods class)
                         :append (cons
-                                  `(setf (deref (&+ ,child-vtable ,vtable-index '*) '*)
-                                         (callback ,trampoline-name))
+                                  `(when (boundp ',child-vtable)
+                                     (setf (deref (&+ ,child-vtable ,vtable-index '*) '*)
+                                           (callback ,trampoline-name)))
                                   (ensure-list
                                     (frob (closer-mop:class-direct-subclasses class)))))))
              (frob (closer-mop:class-direct-subclasses class)))

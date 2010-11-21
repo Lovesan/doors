@@ -24,16 +24,6 @@
 
 (in-package #:doors.com)
 
-(defun %error-no-interface (value)
-  (declare (ignore value))
-  (error 'windows-error :code error-no-interface))
-(defun %iid-known-p (iid)
-  (declare (type iid iid))
-  (not (null (find-interface-class-by-iid iid nil))))
-
-(defalias known-iid ()
-  `(filtered iid %iid-known-p %error-no-interface))
-
 (define-guid iid-unknown
   #x00000000 #x0000 #x0000
   #xC0 #x00 #x00 #x00 #x00 #x00 #x00 #x46)
@@ -43,10 +33,8 @@
   (query-interface
     (hresult rv
       (translate-interface
-        (com-interface-pointer interface)
-        (find-interface-class-by-iid iid)
-        T))
-    (iid (& known-iid))
+        (com-interface-pointer interface) iid T))
+    (iid (& iid))
     (interface (& unknown :out) :aux))
   (add-ref (ulong))
   (release (ulong)))

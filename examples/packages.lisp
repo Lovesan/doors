@@ -22,41 +22,13 @@
 ;;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;;; DEALINGS IN THE SOFTWARE
 
-(in-package #:doors)
+(in-package #:cl-user)
 
-(define-foreign-library ntdll
-  (T (:default "ntdll")))
-
-(define-foreign-library kernel32
-  (T (:default "kernel32")))
-
-(define-foreign-library user32
-  (T (:default "user32")))
-
-(define-foreign-library gdi32
-  (T (:default "gdi32")))
-
-(define-foreign-library ws2-32
-  (T (:default "ws2_32")))
-
-(define-foreign-library advapi32
-  (T (:default "advapi32")))
-
-(define-foreign-library psapi
-  (t (:default "psapi")))
-
-(define-foreign-library ole32
-  (t (:default "ole32")))
-
-(define-foreign-library secur32
-  (t (:default "secur32")))
-
-(use-foreign-library ntdll)
-(use-foreign-library kernel32)
-(use-foreign-library user32)
-(use-foreign-library gdi32)
-(use-foreign-library ws2-32)
-(use-foreign-library advapi32)
-(use-foreign-library psapi)
-(use-foreign-library ole32)
-(use-foreign-library secur32)
+(defpackage #:doors.com.examples
+  (:use #:cl #:trivial-garbage #:alexandria #:virgil #:doors #:doors.com)
+  (:export
+    #:hello-world
+    #:iid-hello-world
+    #:hello-world-object
+    #:clsid-hello-world
+    #:register-server))

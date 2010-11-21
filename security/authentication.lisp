@@ -146,3 +146,17 @@
 (defalias wstring* () '(string* :utf-16le))
 (defalias tstring* () #+doors.unicode 'wstring*
                       #-doors.unicode 'astring*)
+
+(define-struct (auth-identity)
+    "Contains a user name and password."
+  (user (& tstring))
+  (user-length ulong)
+  (domain (& tstring))
+  (domain-length ulong)
+  (password (& tstring))
+  (password-length ulong)
+  (flags (enum (:base-type ulong)
+           (:ansi 1)
+           (:unicode 2))
+         :initform #+doors.unicode :unicode
+                   #-doors.unicode :ansi))

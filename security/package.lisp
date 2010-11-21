@@ -33,6 +33,7 @@
     #:astring*
     #:wstring*
     #:tstring*
+    #:auth-identity
     
     ;;authorization stuff
     #:security-attributes
@@ -87,4 +88,47 @@
     #:objects-and-sid-object-type-guid
     #:objects-and-sid-inherited-object-type-guid
     #:objects-and-sid-sid
+    #:actrl-access-flags
+    #:actrl-access-allowed
+    #:actrl-denied
+    #:actrl-audit-success
+    #:actrl-audit-failure
+    #:actrl-standard-rights
+    #:actrl-system-access
+    #:actrl-delete
+    #:actrl-read-control
+    #:actrl-change-access
+    #:actrl-synchronize
+    #:actrl-std-rights-all
+    #:actrl-std-rights-required
+    #:inheritance-flags
+    #:no-inheritance
+    #:container-inherit-ace
+    #:inherit-only-ace
+    #:no-propagate-inherit-ace
+    #:object-inherit-ace
+    #:sub-containers-and-objects-inherit
+    #:sub-containers-only-inherit
+    #:sub-objects-only-inherit
+    #:actrl-access-entry
+    #:make-actrl-ae
+    #:actrl-ae-trustee
+    #:actrl-ae-access-flags
+    #:actrl-ae-access
+    #:actrl-ae-prov-specific-access
+    #:actrl-ae-inheritance
+    #:actrl-ae-inherit-property
+    #:actrl-access-entry-list
+    #:make-actrl-ael
+    #:actrl-ael-list
+    #:actrl-access-protected
+    #:actrl-access-not-protected
+    #:actrl-property-entry
+    #:make-actrl-pe
+    #:actrl-pe-property
+    #:actrl-pe-access-entry-list
+    #:actrl-pe-list-flags
+    #:actrl-access
+    #:make-actrl-access
+    #:actrl-access-list
     ))

@@ -1,3 +1,35 @@
+v0.4.0
+    * Hugely improved COM-related part of the library.
+        ** FIND-INTERFACE-CLASS-BY-IID function has been removed.
+            FIND-INTERFACE-CLASS function now accepts IID structures.
+        ** New class: COM-CLASS. A metaclass for all COM-OBJECT's
+            descendants that must be registrable by COM runtime.
+        ** New function: FIND-COM-CLASS. This function is identical to
+            FIND-INTERFACE-CLASS function except that is performs
+            a lookup for COM-CLASS rather than for COM-INTERFACE-CLASS
+        ** IID and CLSID types have been redefined to be interface and class
+            designators respectively. Their translators now accept not only
+            GUID structures but also interface/object classes and symbols
+            which designate those classes(i.e. their names).
+        ** COM interface methods' generic functions must now be of
+            COM-GENERIC-FUNCTION class
+        ** Added more COM-related constants, functions, structures
+            and error codes
+        ** Added CLASS-FACTORY(i.e. IClassFactory) interface
+    * Notice that COM interop works only partially on SBCL:
+        COM interfaces which are implemented by lisp-side COM-objects
+        should not be passed into foreign code.
+        SBCL does not support stdcall callbacks at the moment, so calling
+        lisp interfaces from anywhere except lisp will likely to cause
+        stack corruption.
+    * Added some examples of COM usage.
+    * Added more bindings(e.g. system time stuff)
+    * Some minor changes in DOORS package:
+        ** OS-VERSION-INFO's constructor is now named MAKE-OS-VERSION-INFO
+        ** Several error code constants were moved into DOORS.COM package
+        ** WINDOWS-CONDITION's printer now uses FormatMessage for all
+            system error codes
+
 v0.3.2
     * bug fix: The process of determining OS version was erroneous
 

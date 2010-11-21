@@ -76,7 +76,7 @@
 
 (defmethod stack-pop ((object stack-object))
   (if (endp (stack-object-stack object))
-    (error 'windows-error)
+    (error 'windows-error :code error-failure)
     (values nil (pop (stack-object-stack object)))))
 
 (defun stack-test ()

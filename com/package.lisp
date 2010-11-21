@@ -26,16 +26,33 @@
 
 (defpackage #:doors.com
   (:use #:cl #:alexandria #:trivial-garbage #:virgil #:doors)
+  (:nicknames #:com)
   (:export
    
     #:iid
     #:clsid
     
+    ;;errors
+    #:com-error
+    #:com-error-code
+    
+    #:error-not-implemented
+    #:error-no-interface
+    #:error-invalid-pointer
+    #:error-abort
+    #:error-failure
+    #:error-data-pending
+    #:error-class-not-available
+    #:error-class-not-registered
+    
+    #:error-unexpected-failure
+    #:error-not-implemented
+    
     ;;com-interface related stuff
     #:com-interface-class
     #:com-interface
+    #:com-generic-function
     #:find-interface-class
-    #:find-interface-class-by-iid
     #:com-interface-pointer
     #:com-interface-method-pointer
     #:translate-interface
@@ -44,16 +61,84 @@
     #:define-interface-method
     
     ;;com-object related stuff
+    #:com-class
     #:com-object
+    #:find-com-class
     #:acquire-interface
     
     ;;IUnknown
     #:iid-unknown
     #:unknown
-    #:query-interface
+    #:query-interface    
     #:add-ref
     #:release
-    #:known-iid
+    
     #:with-interface
     #:with-interfaces
+    
+    ;;enumerations
+    #:com-rights
+    #:com-rights-execute
+    #:com-rights-execute-local
+    #:com-rights-execute-remote
+    #:com-rights-activate-local
+    #:com-rights-activate-remote
+    #:class-object-registration-flags
+    #:regcls-single-use
+    #:regcls-miltiple-use
+    #:regcls-multi-separate
+    #:regcls-suspended
+    #:regcls-surrogate
+    #:class-context-flags
+    #:clsctx-inproc-server
+    #:clsctx-inproc-handler
+    #:clsctx-inproc
+    #:clsctx-local-server
+    #:clsctx-remote-server
+    #:clsctx-no-code-download
+    #:clsctx-no-custom-marshal
+    #:clsctx-enable-code-download
+    #:clsctx-no-failure-log
+    #:clsctx-disable-aaa
+    #:clsctx-enable-aaa
+    #:clsctx-form-default-context
+    #:clsctx-activate-32-bit-server
+    #:clsctx-activate-64-bit-server
+    #:clsctx-enable-cloaking
+    #:clsctx-all
+    #:clsctx-server
+    #:clsctx-ps-dll
+    
+    ;;structures
+    #:server-info
+    #:make-server-info
+    #:server-info-name
+    #:server-info-auth-info
+    #:auth-info
+    #:make-auth-info
+    #:auth-info-authn-svc
+    #:auth-info-authz-svc
+    #:auth-info-server-principal-name
+    #:auth-info-auth-level
+    #:auth-info-impersonation-level
+    #:auth-info-auth-identity-data
+    #:auth-info-capabilities
+    
+    ;;interfaces
+    #:class-factory
+    #:iid-class-factory
+    #:create-instance
+    #:lock-server
+    
+    ;;functions
+    #:register-class-object
+    #:revoke-class-object
+    #:class-object
+    #:create-com-instance
+    #:initialize
+    #:uninitialize
+    #:create-guid
+    #:task-mem-alloc
+    #:task-mem-realloc
+    #:task-mem-free
     ))

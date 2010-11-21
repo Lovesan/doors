@@ -103,31 +103,32 @@
                          "NT"
                          (hresult-facility code))
                        (hresult-code code)
-                       (or (when (eq :win32 (hresult-facility code))
-                             (let ((code (hresult-code code)))
-                               (with-pointer (pp &0 'pointer)
-                                 (when (/= 0 (external-function-call
-                                               #+doors.unicode "FormatMessageW"
-                                               #-doors.unicode "FormatMessageA"
-                                               ((:stdcall kernel32)
-                                                (dword)
-                                                (dword flags :aux #x1300)
-                                                (pointer source :aux)
-                                                (dword message-id :aux code)
-                                                (dword language-id :aux
-                                                       #+doors.unicode 0
-                                                       #-doors.unicode #x00000409)
-                                                (pointer buffer :aux pp)
-                                                (dword size :aux)
-                                                (pointer args :aux))))
-                                   (unwind-protect
-                                       (deref pp '(& tstring))
-                                    (external-function-call
-                                      "LocalFree"
-                                      ((:stdcall kernel32)
-                                       (void)
-                                       (pointer))
-                                      (deref pp '*)))))))
+                       (or (let ((code (if (eq :win32 (hresult-facility code))
+                                         (hresult-code code)
+                                         code)))
+                             (with-pointer (pp &0 'pointer)
+                               (when (/= 0 (external-function-call
+                                             #+doors.unicode "FormatMessageW"
+                                             #-doors.unicode "FormatMessageA"
+                                             ((:stdcall kernel32)
+                                              (dword)
+                                              (dword flags :aux #x1300)
+                                              (pointer source :aux)
+                                              (dword message-id :aux code)
+                                              (dword language-id :aux
+                                                     #+doors.unicode 0
+                                                     #-doors.unicode #x00000409)
+                                              (pointer buffer :aux pp)
+                                              (dword size :aux)
+                                              (pointer args :aux))))
+                                 (unwind-protect
+                                     (deref pp '(& tstring))
+                                   (external-function-call
+                                     "LocalFree"
+                                     ((:stdcall kernel32)
+                                      (void)
+                                      (pointer))
+                                     (deref pp '*))))))
                            (gethash code *result-descriptions*)))
                condition))))
 
@@ -203,8 +204,7 @@
                   (,condition (make-condition
                                 (or ,condition-name
                                     (if ,errorp 'windows-error 'windows-status))
-                                :code ,code
-                                :hresult-p t)))
+                                :code ,code)))
              (if ,errorp
                (error ,condition)
                (warn ,condition)))))))

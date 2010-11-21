@@ -24,13 +24,15 @@
 
 (in-package #:doors)
 
-(declaim (inline guid guid-dw guid-w1 guid-w2
+(declaim (inline guid guidp make-guid guid-dw guid-w1 guid-w2
                  guid-b1 guid-b2 guid-b3 guid-b4
                  guid-b5 guid-b6 guid-b7 guid-b8
                  %guid-reader %guid-writer %guid-cleaner))
 (define-struct
     (guid
       (:constructor guid (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8))
+      (:constructor make-guid)
+      (:predicate guidp)
       (:cleaner %guid-cleaner)
       (:reader %guid-reader)
       (:writer %guid-writer)
@@ -132,10 +134,11 @@
   (defvar *guid-constants* (make-hash-table :test #'equalp))
   (defmethod make-load-form ((object guid) &optional env)
     (declare (ignore env))
-    (or (gethash object *guid-constants*)
-        (with-guid-accessors (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8)
-          object
-          `(guid ,dw ,w1 ,w2 ,b1 ,b2 ,b3 ,b4 ,b5 ,b6 ,b7 ,b8)))))
+    (with-guid-accessors (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8)
+      object
+      `(load-time-value
+         (guid ,dw ,w1 ,w2 ,b1 ,b2 ,b3 ,b4 ,b5 ,b6 ,b7 ,b8)
+         t))))
 
 (defmacro define-guid (name dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8)
   (check-type name symbol)
@@ -151,9 +154,10 @@
   (check-type b7 ubyte)
   (check-type b8 ubyte)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (define-constant ,name (guid ,dw ,w1 ,w2 ,b1 ,b2 ,b3 ,b4 ,b5 ,b6 ,b7 ,b8)
+     (define-constant ,name (load-time-value
+                              (guid ,dw ,w1 ,w2 ,b1 ,b2 ,b3 ,b4 ,b5 ,b6 ,b7 ,b8)
+                              t)
        :test #'equalp)
-     (setf (gethash ,name *guid-constants*) ',name)
      ',name))
 
 (define-guid uuid-null  0 0 0 0 0 0 0 0 0 0 0)

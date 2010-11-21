@@ -24,13 +24,6 @@
 
 (in-package #:doors.com)
 
-(defalias iid () 'guid)
-(deftype iid () 'guid)
-
-(defalias clsid () 'guid)
-(deftype clsid () 'guid)
-
-
 (defvar *pointer-to-object-mapping* (make-weak-hash-table :test #'eql
                                       :weakness :value))
 
@@ -42,7 +35,7 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
 
 (closer-mop:defclass com-interface-class (standard-class)
-  ((iid :initform nil :initarg :iid)   
+  ((%iid :initform nil :initarg :iid)   
    (vtable-name :initform nil
                 :initarg :vtable-name
                 :reader com-interface-class-vtable-name)
@@ -50,11 +43,11 @@
             :initarg :methods
             :reader com-interface-class-methods)))
 
-(defmethod closer-mop:validate-superclass
+(closer-mop:defmethod closer-mop:validate-superclass
     ((class standard-class) (superclass com-interface-class))
   nil)
 
-(defmethod closer-mop:validate-superclass
+(closer-mop:defmethod closer-mop:validate-superclass
     ((class com-interface-class) (superclass standard-class))
   t)
   
@@ -64,24 +57,31 @@
              :initform nil))
   (:metaclass com-interface-class))
   
+(closer-mop:defclass com-generic-function (closer-mop:standard-generic-function)
+  ()
+  (:metaclass closer-mop:funcallable-standard-class))
+  
+(closer-mop:defmethod no-applicable-method
+    ((function com-generic-function) &rest args)
+  (declare (ignore args))
+  (error 'com-error :code error-not-implemented))
+  
 (closer-mop:finalize-inheritance (find-class 'com-interface-class))
 (closer-mop:finalize-inheritance (find-class 'com-interface))
-
+(closer-mop:finalize-inheritance (find-class 'com-generic-function))
+  
 ) ;;eval-when
 
-(defun find-interface-class (name &optional (errorp T))
-  (declare (type symbol name))
-  (let ((class (find-class name errorp)))
-    (if (typep class 'com-interface-class)
-      class
-      (and errorp (error 'windows-error :code error-no-interface)))))
+(deftype iid () '(or symbol com-interface-class guid))
 
-(defun find-interface-class-by-iid (iid &optional (errorp T))
-  (declare (type iid iid))
-  (let ((class (gethash iid *iid-to-interface-class-mapping*)))
+(defun find-interface-class (name &optional (errorp T))
+  (declare (type (or symbol guid) name))
+  (let ((class (etypecase name
+                 (symbol (find-class name nil))
+                 (guid (gethash name *iid-to-interface-class-mapping*)))))
     (if (typep class 'com-interface-class)
       class
-      (and errorp (error 'windows-error :code error-no-interface)))))
+      (and errorp (error 'com-error :code error-no-interface)))))
 
 (defconstant pointer-slot-location
     (closer-mop:slot-definition-location
@@ -91,7 +91,7 @@
 
 (defconstant iid-slot-location
     (closer-mop:slot-definition-location
-        (find 'iid
+        (find '%iid
               (closer-mop:class-slots (find-class 'com-interface-class))
               :key #'closer-mop:slot-definition-name)))
 
@@ -119,7 +119,7 @@
 
 (defun translate-interface (pointer class &optional finalize)
   (declare (type pointer pointer)
-           (type (or symbol com-interface-class) class)
+           (type (or symbol guid com-interface-class) class)
            (optimize (speed 3)))
   (unless (typep class 'com-interface-class)
     (setf class (find-interface-class class)))
@@ -179,3 +179,52 @@
 
 (defmethod unparse-type ((type com-interface-type))
   (com-interface-type-name type))
+
+(define-translatable-type iid-type ()
+  ()
+  (:simple-parser iid)
+  (:lisp-type (type) 'iid)
+  (:prototype (type) (guid 0 0 0 0 0 0 0 0 0 0 0))
+  (:prototype-expansion (type) '(guid 0 0 0 0 0 0 0 0 0 0 0))
+  (:fixed-size (type) (sizeof 'guid))
+  (:cleaner (value pointer type) nil)
+  (:cleaner-expansion (value pointer type) nil)
+  (:allocator (value type) (alloc 'guid))
+  (:allocator-expansion (value type) `(alloc 'guid))
+  (:deallocator (pointer type) (free pointer 'guid))
+  (:deallocator-expansion (pointer type) `(free ,pointer 'guid))
+  (:reader (pointer out type)
+    (let ((guid (or (and (typep out 'guid) out)
+                    (prototype type))))
+      (or (find-interface-class (deref pointer 'guid 0 guid) nil)
+          guid)))
+  (:reader-expansion (pointer out type)
+    (once-only ((pointer `(the pointer ,pointer))
+                (out `(the iid ,out)))
+      (with-gensyms (guid)
+        `(let ((,guid (or (and (guidp ,out) ,out)
+                          ,(expand-prototype type))))
+           (declare (type guid ,guid))
+           (or (find-interface-class (deref ,pointer 'guid 0 ,guid) nil)
+               ,guid)))))
+  (:writer (value pointer type)
+    (let* ((class (if (typep value 'com-interface-class)
+                    value
+                    (find-interface-class value)))
+           (guid (or (closer-mop:standard-instance-access
+                       class iid-slot-location)
+                     (error 'com-error :code error-no-interface))))
+      (setf (deref pointer 'guid) guid)
+      value))
+  (:writer-expansion (value pointer type)
+    (once-only (value (pointer `(the pointer ,pointer)))
+      (with-gensyms (class guid)
+        `(let* ((,class (the com-interface-class
+                             (if (typep ,value 'com-interface-class)
+                               ,value
+                               (find-interface-class ,value))))
+                (,guid (or (closer-mop:standard-instance-access
+                             ,class iid-slot-location)
+                           (error 'com-error :code error-no-interface))))
+           (setf (deref ,pointer 'guid) (the guid ,guid))
+           ,value)))))

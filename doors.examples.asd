@@ -22,41 +22,16 @@
 ;;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;;; DEALINGS IN THE SOFTWARE
 
-(in-package #:doors)
+(defsystem #:doors.examples
+  :author "Dmitry Ignatiev <lovesan.ru@gmail.com>"
+  :maintainer "Dmitry Ignatiev <lovesan.ru@gmail.com>"
+  :licence "MIT"
+  :depends-on (#:doors #:virgil #:alexandria)
+  :serial t
+  :components ((:module "examples"
+                        :serial t
+                        :components ((:file "packages")
+                                     (:file "com")
+                                     ))))
 
-(define-foreign-library ntdll
-  (T (:default "ntdll")))
-
-(define-foreign-library kernel32
-  (T (:default "kernel32")))
-
-(define-foreign-library user32
-  (T (:default "user32")))
-
-(define-foreign-library gdi32
-  (T (:default "gdi32")))
-
-(define-foreign-library ws2-32
-  (T (:default "ws2_32")))
-
-(define-foreign-library advapi32
-  (T (:default "advapi32")))
-
-(define-foreign-library psapi
-  (t (:default "psapi")))
-
-(define-foreign-library ole32
-  (t (:default "ole32")))
-
-(define-foreign-library secur32
-  (t (:default "secur32")))
-
-(use-foreign-library ntdll)
-(use-foreign-library kernel32)
-(use-foreign-library user32)
-(use-foreign-library gdi32)
-(use-foreign-library ws2-32)
-(use-foreign-library advapi32)
-(use-foreign-library psapi)
-(use-foreign-library ole32)
-(use-foreign-library secur32)
+;; vim: ft=lisp et

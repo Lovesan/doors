@@ -38,36 +38,28 @@
 (define-results windows-error (error)
   ()
   ((success 0 "No error occurred")
-   (invalid-info-class #xC0000003
-     "The specified information class is not a valid information class for the specified object.")
    (unexpected-failure #x8000FFFF
      "Catastrophic failure")
-   (not-implemented #x80004001
-     "Not implemented")
+   (invalid-info-class #xC0000003
+     "The specified information class is not a valid information class for the specified object.")
+   (more-data #x800700EA
+     "More data is available.")
    (out-of-memory #x8007000E
      "Ran out of memory")
    (invalid-arg #x80070057
      "One or more arguments are invalid")
-   (no-interface #x80004002
-     "No such interface supported")
-   (invalid-pointer #x80004003
-     "Invalid pointer")
    (invalid-handle #x80070006
      "Invalid handle")
    (bad-length #x80070018
      "The program issued a command but the command length is incorrect.")
    (insufficient-buffer #x8007007A
      "The data area passed to a system call is too small")
-   (abort #x80004004
-     "Operation aborted")
-   (failure #x80004005
-     "Unspecified error")
+   (buffer-overflow #x8007006F
+     "The file name is too long.")
    (access-denied #x80070005
-     "General access denied error")
-   (data-pending #x8000000A
-     "The data necessary to complete this operation is not yet available"))
+     "General access denied error"))
   (:conc-name error-)
-  (:default-initargs :code error-failure))
+  (:default-initargs :code error-unexpected-failure))
 
 (defun windows-error-code (windows-error)
   (declare (type windows-error windows-error))
@@ -103,7 +95,7 @@
         (if (hresult-error-p result)
           (error 'windows-error :code result)
           (if error-if-no-error
-            (error 'windows-error :code error-failure)
+            (error 'windows-error)
             default-value)))
       (error 'non-system-error :code last-error-code))))
 
