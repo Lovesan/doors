@@ -89,12 +89,6 @@
               (closer-mop:class-slots (find-class 'com-interface))
               :key #'closer-mop:slot-definition-name)))
 
-(defconstant iid-slot-location
-    (closer-mop:slot-definition-location
-        (find '%iid
-              (closer-mop:class-slots (find-class 'com-interface-class))
-              :key #'closer-mop:slot-definition-name)))
-
 (declaim (inline com-interface-pointer))
 (defun com-interface-pointer (interface)
   (declare (type com-interface interface))
@@ -115,7 +109,7 @@
            (* index (sizeof 'pointer)))))
 
 (defmethod uuid-of ((class com-interface-class))
-  (closer-mop:standard-instance-access class iid-slot-location))
+  (slot-value class '%iid))
 
 (defun translate-interface (pointer class &optional finalize)
   (declare (type pointer pointer)
@@ -211,8 +205,7 @@
     (let* ((class (if (typep value 'com-interface-class)
                     value
                     (find-interface-class value)))
-           (guid (or (closer-mop:standard-instance-access
-                       class iid-slot-location)
+           (guid (or (slot-value class '%iid)
                      (error 'com-error :code error-no-interface))))
       (setf (deref pointer 'guid) guid)
       value))
@@ -223,8 +216,7 @@
                              (if (typep ,value 'com-interface-class)
                                ,value
                                (find-interface-class ,value))))
-                (,guid (or (closer-mop:standard-instance-access
-                             ,class iid-slot-location)
+                (,guid (or (slot-value ,class '%iid)
                            (error 'com-error :code error-no-interface))))
            (setf (deref ,pointer 'guid) (the guid ,guid))
            ,value)))))

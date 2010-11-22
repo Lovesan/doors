@@ -30,7 +30,12 @@
   (hresult rv register)
   "Registers an EXE class object with OLE so other applications can connect to it."
   (clsid (& clsid))
-  (unknown unknown)
+  (unknown unknown :aux (let* ((class (if (typep clsid 'com-class)
+                                        clsid
+                                        (find-com-class clsid)))
+                               (unknown (acquire-interface class 'unknown)))
+                          (release unknown)
+                          unknown))
   (class-context class-context-flags :optional :all)
   (flags class-object-registration-flags :optional :multiple-use)
   (register (& dword :out) :aux))

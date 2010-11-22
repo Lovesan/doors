@@ -29,9 +29,14 @@
 
 (deftype clsid () '(or symbol guid com-class))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
+(closer-mop:defclass com-object ()
+  ((ref-count :initform 0 :accessor com-object-ref-count)
+   (interface-pointers :initform (make-hash-table :test #'eq)
+                       :reader com-object-interface-pointers))
+  (:documentation "Represents a COM object class.
+All lisp-side COM object classes must inherit from this class."))
   
-(closer-mop:defclass com-class (standard-class)
+(closer-mop:defclass com-class (com-object standard-class)
   ((%clsid :initform nil :initarg :clsid)))
   
 (closer-mop:defmethod shared-initialize :after
@@ -55,65 +60,9 @@
 (closer-mop:defmethod closer-mop:validate-superclass
     ((class standard-class) (superclass com-class))
   T)
-  
-(closer-mop:finalize-inheritance (find-class 'com-class))
-  
-) ;;eval-when
-
-(defconstant clsid-slot-location    
-    (closer-mop:slot-definition-location
-        (find '%clsid
-              (closer-mop:class-slots (find-class 'com-class))
-              :key #'closer-mop:slot-definition-name)))
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-
-(closer-mop:defclass com-object ()
-  ((ref-count :initform 0)
-   (interface-pointers :initform (make-hash-table :test #'eq)))
-  (:metaclass com-class)
-  (:documentation
-"Represents a COM object class.
-All lisp-side COM object classes must inherit from this class."))
-
-(closer-mop:finalize-inheritance (find-class 'com-object))
-
-) ;;eval-when
-
-(defconstant ref-count-slot-location
-    (closer-mop:slot-definition-location
-        (find 'ref-count
-              (closer-mop:class-slots (find-class 'com-object))
-              :key #'closer-mop:slot-definition-name)))
-
-(declaim (inline com-object-ref-count))
-(defun com-object-ref-count (object)
-  (declare (type com-object object))
-  (the ulong (closer-mop:standard-instance-access
-               object ref-count-slot-location)))
-
-(declaim (inline (setf com-object-ref-count)))
-(defun (setf com-object-ref-count) (new-value object)
-  (declare (type com-object object)
-           (type ulong new-value))
-  (setf (closer-mop:standard-instance-access
-          object ref-count-slot-location)
-        new-value))
-
-(defconstant interface-pointers-slot-location    
-    (closer-mop:slot-definition-location
-        (find 'interface-pointers
-              (closer-mop:class-slots (find-class 'com-object))
-              :key #'closer-mop:slot-definition-name)))
-
-(declaim (inline com-object-interface-pointers))
-(defun com-object-interface-pointers (object)
-  (declare (type com-object object))
-  (the hash-table (closer-mop:standard-instance-access
-                    object interface-pointers-slot-location)))
 
 (defmethod uuid-of ((class com-class))
-  (closer-mop:standard-instance-access class clsid-slot-location))
+  (slot-value class '%clsid))
 
 (defun find-com-class (name &optional (errorp t))
   (declare (type (or symbol guid) name))
@@ -229,11 +178,11 @@ All lisp-side COM object classes must inherit from this class."))
     (declare (type clsid value))
     (let ((guid (if (typep value 'guid)
                   value
-                  (or (closer-mop:standard-instance-access
+                  (or (slot-value
                         (if (typep value 'com-class)
                           value
                           (find-com-class value))
-                        clsid-slot-location)
+                        '%clsid)
                       (error 'com-error :code error-class-not-registered)))))
       (setf (deref pointer 'guid) guid)
       value))
@@ -243,11 +192,11 @@ All lisp-side COM object classes must inherit from this class."))
       (with-gensyms (guid)
         `(let ((,guid (if (typep ,value 'guid)
                         ,value
-                        (or (closer-mop:standard-instance-access
+                        (or (slot-value
                               (if (typep ,value 'com-class)
                                 ,value
                                 (find-com-class ,value))
-                              clsid-slot-location)
+                              '%clsid)
                             (error 'com-error :code error-class-not-registered)))))
            (setf (deref ,pointer 'guid) (the guid ,guid))
            ,value)))))

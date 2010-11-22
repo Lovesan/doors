@@ -1,3 +1,9 @@
+v0.4.1
+    * COM-CLASS now inherits from COM-OBJECT
+    * REGISTER-CLASS-OBJECT function does not accept
+        UNKNOWN parameter any more. An interface is acquired directly
+        from the class metaobject
+
 v0.4.0
     * Hugely improved COM-related part of the library.
         ** FIND-INTERFACE-CLASS-BY-IID function has been removed.
@@ -20,7 +26,7 @@ v0.4.0
         COM interfaces which are implemented by lisp-side COM-objects
         should not be passed into foreign code.
         SBCL does not support stdcall callbacks at the moment, so calling
-        lisp interfaces from anywhere except lisp will likely to cause
+        lisp interfaces from anywhere except lisp will likely cause
         stack corruption.
     * Added some examples of COM usage.
     * Added more bindings(e.g. system time stuff)

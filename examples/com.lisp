@@ -37,7 +37,7 @@
   #x8D #x32 #xF9 #xAA #x1A #xAA #x3A #xBF)
 
 (defclass hello-world-object (com-object)
-  ((locked :initform nil :accessor hwo-locked-p))
+  ()
   (:metaclass com-class)
   (:clsid . clsid-hello-world))
 
@@ -46,37 +46,28 @@
   (write-line string)
   (values nil string))
 
-(defmethod lock-server ((object hello-world-object) lock)
-  (if (hwo-locked-p object)
-    (if lock
-      (warn 'windows-status :code status-false)
-      (progn (release object)
-             (setf (hwo-locked-p object) nil)))
-    (if lock
-      (progn (add-ref object)
-             (setf (hwo-locked-p object) t))
-      (warn 'windows-status :code status-false)))
+(defmethod lock-server ((class (eql (find-class 'hello-world-object))) lock)
+  (if lock
+    (add-ref class)
+    (release class))
   (values nil lock))
 
 (defmethod create-instance
-    ((object hello-world-object) iid &optional outer)
+    ((class (eql (find-class 'hello-world-object))) iid &optional outer)
   (if outer
     (error 'com-error :code error-not-implemented)
     (progn
-      (unless (typep iid 'com-interface-class)
-        (setf iid (find-interface-class iid)))
       (unless (member (class-name iid)
                       '(unknown class-factory hello-world))
         (error 'com-error :code error-no-interface))
-      (let ((object (make-instance 'hello-world-object)))
+      (let ((object (make-instance class)))
         (values nil outer iid (acquire-interface object iid))))))
 
 (defun register-server ()
   (handler-bind
     ((windows-status #'muffle-warning))
     (initialize))
-  (let* ((object (make-instance 'hello-world-object))
-         (unknown (acquire-interface object 'unknown t))
-         (register (register-class-object 'hello-world-object unknown
-                                          :server :multiple-use)))
-    (values register object)))
+  (let* ((class (find-class 'hello-world-object))
+         (register (register-class-object
+                     class :server :multiple-use)))
+    register))

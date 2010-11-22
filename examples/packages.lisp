@@ -26,6 +26,7 @@
 
 (defpackage #:doors.com.examples
   (:use #:cl #:trivial-garbage #:alexandria #:virgil #:doors #:doors.com)
+  (:nicknames #:com.examples)
   (:export
     #:hello-world
     #:iid-hello-world
