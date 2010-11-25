@@ -1,3 +1,19 @@
+v0.4.2
+    * new feature: COM-WRAPPER-CLASS and COM-WRAPPER classes
+        ** COM-WRAPPER encapsulates particular com-object and
+            all of its interfaces. It is roughly identical to
+            .NET's "runtime callable wrapper".
+            It calls CoCreateInstanceEx inside its SHARED-INITIALIZE
+            method.
+        ** COM-WRAPPER-CLASS is a metaclass for all COM-WRAPPERs.
+            In addition to CLSID it holds all of the interface
+            classes that particular com class implements.            
+    * :clsid initarg for COM-CLASSes now accepts a string.
+        In this case, string is converted into CLSID by the mean of
+        CLSID-FROM-STRING(i.e. "CLSIDFromString") function
+    * Interface's translator(CONVERT-VALUE) now accepts
+        COM-OBJECTs and COM-WRAPPERs
+
 v0.4.1
     * COM-CLASS now inherits from COM-OBJECT
     * REGISTER-CLASS-OBJECT function does not accept

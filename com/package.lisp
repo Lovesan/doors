@@ -108,6 +108,33 @@
     #:clsctx-all
     #:clsctx-server
     #:clsctx-ps-dll
+    #:com-init-flags
+    #:coinit-multithreaded
+    #:coinit-apartament-threaded
+    #:coinit-disable-ole1-dde
+    #:coinit-speed-over-memory
+    #:bind-flags
+    #:bind-may-bother-user
+    #:bind-just-test-existence
+    #:stgm-flags
+    #:stgm-read
+    #:stgm-write
+    #:stgm-read-wrie
+    #:stgm-share-deny-none
+    #:stgm-share-deny-read
+    #:stgm-share-deny-write
+    #:stgm-share-exclusive
+    #:stgm-priority
+    #:stgm-create
+    #:stgm-convert
+    #:stgm-fail-if-there
+    #:stgm-direct
+    #:stgm-transacted
+    #:stgm-no-scratch
+    #:stgm-no-snapshot
+    #:stgm-simple
+    #:stgm-direct-swmr
+    #:stgm-delete-on-release
     
     ;;structures
     #:server-info
@@ -123,6 +150,16 @@
     #:auth-info-impersonation-level
     #:auth-info-auth-identity-data
     #:auth-info-capabilities
+    #:bind-options
+    #:make-bind-options
+    #:bind-opt-flags
+    #:bind-opt-mode
+    #:bind-opt-tick-count-deadline
+    #:multi-qi
+    #:make-multi-qi
+    #:multi-qi-iid
+    #:multi-qi-interface
+    #:multi-qi-hresult
     
     ;;interfaces
     #:class-factory
@@ -141,4 +178,19 @@
     #:task-mem-alloc
     #:task-mem-realloc
     #:task-mem-free
+    #:string-from-iid
+    #:initialize*
+    #:clsid-from-progid
+    #:clsid-from-progid*
+    #:clsid-from-string
+    #:string-from-clsid
+    #:progid-from-clsid
+    #:string-from-guid
+    #:create-com-instance*
+    
+    ;;wrapper stuff
+    #:com-wrapper-class
+    #:com-wrapper
+    #:com-wrapper-context
+    #:com-wrapper-server-info
     ))

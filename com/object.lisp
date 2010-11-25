@@ -33,8 +33,8 @@
   ((ref-count :initform 0 :accessor com-object-ref-count)
    (interface-pointers :initform (make-hash-table :test #'eq)
                        :reader com-object-interface-pointers))
-  (:documentation "Represents a COM object class.
-All lisp-side COM object classes must inherit from this class."))
+  (:documentation
+    "All lisp-side COM object classes must inherit from this class."))
   
 (closer-mop:defclass com-class (com-object standard-class)
   ((%clsid :initform nil :initarg :clsid)))
@@ -46,6 +46,12 @@ All lisp-side COM object classes must inherit from this class."))
     (setf (gethash (setf (slot-value class '%clsid)
                          (etypecase clsid
                            (guid clsid)
+                           (string (external-function-call
+                                     "CLSIDFromString"
+                                     ((:stdcall ole32)
+                                      (hresult rv id)
+                                      ((& wstring) str :aux clsid)
+                                      ((& guid :out) id :aux))))
                            (symbol (let ((id (symbol-value clsid)))
                                      (check-type id clsid)
                                      id))

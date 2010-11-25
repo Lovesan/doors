@@ -31,5 +31,5 @@
     #:hello-world
     #:iid-hello-world
     #:hello-world-object
-    #:clsid-hello-world
+    #:hello-world-wrapper
     #:register-server))

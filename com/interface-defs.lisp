@@ -100,40 +100,64 @@
       (multiple-value-bind
           (normalized types primary key optional aux) (parse-args args)
         `((progn
-            (closer-mop:ensure-generic-function ',method-name
-              :generic-function-class 'com-generic-function
-              :lambda-list '(,@(if (consp method-name)
-                                 `(,(car primary)
-                                   ,this-var
-                                   ,@(rest primary))
-                                 `(,this-var ,@primary))
-                             ,@(when optional `(&optional ,@optional))
-                             ,@(when key `(&key ,@key)))
-              ,@(when doc `(:documentation ,doc)))
-            (defmethod ,method-name (,@(if (consp method-name)
-                                         `(,(car primary)
-                                             (,this-var ,interface-name)
-                                             ,@(rest primary))
-                                         `((,this-var ,interface-name)
-                                           ,@primary))
-                                        ,@(unless (null key)
-                                            (make-method-arg-group types key '&key))
-                                        ,@(unless (null optional)
-                                            (make-method-arg-group types optional '&optional))
-                                        ,@(unless (null aux)
-                                            (make-method-arg-group types aux '&aux)))
-              (declare (type ,interface-name ,this-var)
-                       ,@(loop :for (name lisp-type initform) :in types
-                           :collect `(type ,lisp-type ,name)))
-              (external-pointer-call
-                (deref (&+ (deref (com-interface-pointer ,this-var) 'pointer)
-                        ,vtable-index
-                        'pointer)
-                       'pointer)
-                ((:stdcall)
-                 (,return-type ,return-value-name ,result-form)
-                 (,interface-name ,this-var :aux ,this-var)
-                 ,@normalized))))
+            (eval-when (:compile-toplevel :load-toplevel :execute)
+              (closer-mop:ensure-generic-function ',method-name
+                :generic-function-class 'com-generic-function
+                :lambda-list '(,@(if (consp method-name)
+                                   `(,(car primary)
+                                       ,this-var
+                                       ,@(rest primary))
+                                   `(,this-var ,@primary))
+                               ,@(when optional `(&optional ,@optional))
+                               ,@(when key `(&key ,@key)))
+                ,@(when doc `(:documentation ,doc))))
+            ,@(flet ((method-lambda-list (wrapper)
+                       `(,@(if (consp method-name)
+                             `(,(car primary)
+                                 (,this-var ,(if wrapper
+                                               'com-wrapper
+                                               interface-name))
+                                 ,@(rest primary))
+                             `((,this-var ,(if wrapper
+                                             'com-wrapper
+                                             interface-name))
+                               ,@primary))
+                            ,@(unless (null key)
+                                (make-method-arg-group types key '&key))
+                            ,@(unless (null optional)
+                                (make-method-arg-group types optional '&optional))
+                            ,@(unless (null aux)
+                                (make-method-arg-group types aux '&aux))))
+                     (arg-type-decls ()
+                       (loop :for (name lisp-type initform) :in types
+                         :collect `(type ,lisp-type ,name)))
+                     (callout-form (wrapper)
+                       `(external-pointer-call
+                          (deref (&+ (deref ,(if wrapper
+                                               this-var
+                                               `(com-interface-pointer ,this-var))
+                                            'pointer)
+                                  ,vtable-index
+                                  'pointer)
+                                 'pointer)
+                          ((:stdcall)
+                           (,return-type ,return-value-name ,result-form)
+                           (,(if wrapper 'pointer interface-name)
+                              ,this-var :aux ,this-var)
+                           ,@normalized))))
+                `((defmethod ,method-name ,(method-lambda-list nil)
+                    (declare (type ,interface-name ,this-var)
+                             ,@(arg-type-decls))
+                    ,(callout-form nil))
+                  (defmethod ,method-name ,(method-lambda-list t)
+                    (declare (type com-wrapper ,this-var)
+                             ,@(arg-type-decls))
+                    (let ((,this-var
+                            (or (gethash ',interface-name
+                                         (%wrapper-interface-pointers ,this-var))
+                                (error 'com-error :code error-not-implemented))))
+                      (declare (type pointer ,this-var))
+                      ,(callout-form t))))))
           ,@(let ((trampoline-name (make-internal-name
                                      (package-name *package*)
                                      interface-name

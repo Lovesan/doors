@@ -32,14 +32,10 @@
   (hello-world (hresult)
       (string (& wstring) :optional "Hello, world!")))
 
-(define-guid clsid-hello-world
-  #xDF748DA7 #xBCB9 #x4F67
-  #x8D #x32 #xF9 #xAA #x1A #xAA #x3A #xBF)
-
 (defclass hello-world-object (com-object)
   ()
   (:metaclass com-class)
-  (:clsid . clsid-hello-world))
+  (:clsid . "{DF748DA7-BCB9-4F67-8D32-F9AA1AAA3ABF}"))
 
 (defmethod hello-world ((object hello-world-object)
                         &optional (string "Hello, world!"))
@@ -71,3 +67,10 @@
          (register (register-class-object
                      class :server :multiple-use)))
     register))
+
+
+(defclass hello-world-wrapper (com-wrapper)
+  ()
+  (:metaclass com-wrapper-class)
+  (:interfaces hello-world)
+  (:clsid . "{DF748DA7-BCB9-4F67-8D32-F9AA1AAA3ABF}"))

@@ -57,6 +57,15 @@
              :initform nil))
   (:metaclass com-interface-class))
   
+(closer-mop:defclass com-wrapper ()
+  ((%wrapper-interface-pointers
+     :accessor %wrapper-interface-pointers)
+   (%context-flags :initarg :context
+                   :reader com-wrapper-context)
+   (%server-info :initarg :server-info
+                 :reader com-wrapper-server-info))
+  (:default-initargs :context :all :server-info nil))
+  
 (closer-mop:defclass com-generic-function (closer-mop:standard-generic-function)
   ()
   (:metaclass closer-mop:funcallable-standard-class))
@@ -68,6 +77,7 @@
   
 (closer-mop:finalize-inheritance (find-class 'com-interface-class))
 (closer-mop:finalize-inheritance (find-class 'com-interface))
+(closer-mop:finalize-inheritance (find-class 'com-wrapper))
 (closer-mop:finalize-inheritance (find-class 'com-generic-function))
   
 ) ;;eval-when
@@ -146,18 +156,41 @@
              :initarg :finalize
              :reader com-interface-type-finalize-p))
   (:base-type pointer)
-  (:lisp-type (type) `(or null ,(com-interface-type-name type)))
+  (:lisp-type (type) `(or null ,(com-interface-type-name type)
+                          com-object com-wrapper))
   (:prototype (type) nil)
   (:prototype-expansion (type) nil)
   (:converter (lisp-value type)    
-    (convert-interface lisp-value))
+    (etypecase lisp-value
+      (null &0)
+      (com-interface (com-interface-pointer lisp-value))
+      (com-wrapper (or (gethash (com-interface-type-name type)
+                                (%wrapper-interface-pointers lisp-value))
+                       (error 'com-error :code error-no-interface)))
+      (com-object  (prog1
+                    (com-interface-pointer
+                      (funcall 'acquire-interface
+                               lisp-value
+                               (com-interface-type-name type)))
+                    (funcall 'release lisp-value)))))
   (:translator (pointer type)
     (translate-interface pointer
                          (find-interface-class
                            (com-interface-type-name type))
                          (com-interface-type-finalize-p type)))
-  (:converter-expansion (lisp-value-form type)
-    `(convert-interface ,lisp-value-form))
+  (:converter-expansion (value type)
+    (once-only (value)
+      `(etypecase ,value
+         (null &0)
+         (com-interface (com-interface-pointer ,value))
+         (com-wrapper (or (gethash ',(com-interface-type-name type)
+                                   (%wrapper-interface-pointers ,value))
+                          (error 'com-error :code error-no-interface)))
+         (com-object  (prog1
+                       (com-interface-pointer
+                         (acquire-interface
+                           ,value ',(com-interface-type-name type)))
+                       (release ,value))))))
   (:translator-expansion (pointer-form type)
     `(translate-interface ,pointer-form
                           (find-interface-class

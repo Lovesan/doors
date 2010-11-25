@@ -75,3 +75,42 @@
   (name (& wstring))
   (auth-info (& auth-info :in t))
   (reserved2 dword))
+
+(define-struct (bind-options
+                 (:conc-name bind-opt-)
+                 (:constructor make-bind-options
+                               (&key flags mode tick-count-deadline)))
+    "Contains parameters used during a moniker-binding operation."
+  (cb dword :initform (sizeof 'bind-options))
+  (flags bind-flags)
+  (mode stgm-flags)
+  (tick-count-deadline dword))
+
+(define-struct (multi-qi                 
+                 (:reader %mqi-reader))
+    "Represents an interface in a query for multiple interfaces."
+  (iid (& (const iid)))
+  (interface (unknown t))
+  (hresult hresult))
+
+(defun %mqi-reader (pointer out)
+  (declare (type pointer pointer))
+  (let* ((out (or out (make-multi-qi)))
+         (iid (deref pointer 'iid))
+         (unk (deref pointer 'unknown (offsetof 'multi-qi 'interface)))
+         (hresult (handler-case
+                      (deref pointer 'hresult (offsetof 'multi-qi 'hresult))
+                    (windows-condition (c) c))))
+    (declare (type multi-qi out)
+             (type unknown unk)
+             (type hresult hresult)
+             (type iid iid))
+    (unless (null unk)
+      (setf unk (translate-interface
+                  (com-interface-pointer unk)
+                  iid
+                  t)))
+    (setf (multi-qi-iid out) iid
+          (multi-qi-interface out) unk
+          (multi-qi-hresult out) hresult)
+    out))

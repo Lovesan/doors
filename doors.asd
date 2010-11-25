@@ -23,7 +23,7 @@
 ;;; DEALINGS IN THE SOFTWARE.
 
 (asdf:defsystem #:doors
-  :version "0.4.1"
+  :version "0.4.2"
   :description "Doors, a lisper's gateway to Windows"
   :author "Dmitry Ignatiev <lovesan.ru@gmail.com>"
   :maintainer "Dmitry Ignatiev <lovesan.ru@gmail.com>"
@@ -74,7 +74,8 @@
                         :components ((:file "enumerations")
                                      (:file "structures")
                                      (:file "interfaces")
-                                     (:file "functions")))
+                                     (:file "functions")
+                                     (:file "wrapper")))
                         ))
 
 ;; vim: ft=lisp et
