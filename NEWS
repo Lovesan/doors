@@ -1,3 +1,7 @@
+v0.4.3
+    * bug fix: com-wrapper's methods are now specialized on particular
+        wrapper class
+
 v0.4.2
     * new feature: COM-WRAPPER-CLASS and COM-WRAPPER classes
         ** COM-WRAPPER encapsulates particular com-object and

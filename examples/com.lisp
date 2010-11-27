@@ -68,7 +68,6 @@
                      class :server :multiple-use)))
     register))
 
-
 (defclass hello-world-wrapper (com-wrapper)
   ()
   (:metaclass com-wrapper-class)

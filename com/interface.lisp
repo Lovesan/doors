@@ -39,6 +39,9 @@
    (vtable-name :initform nil
                 :initarg :vtable-name
                 :reader com-interface-class-vtable-name)
+   (wrapper-functions
+     :initform (make-hash-table :test #'equal)
+     :accessor %interface-class-wrapper-functions)
    (methods :initform '()
             :initarg :methods
             :reader com-interface-class-methods)))

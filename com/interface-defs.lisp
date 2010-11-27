@@ -114,13 +114,13 @@
             ,@(flet ((method-lambda-list (wrapper)
                        `(,@(if (consp method-name)
                              `(,(car primary)
-                                 (,this-var ,(if wrapper
-                                               'com-wrapper
-                                               interface-name))
-                                 ,@(rest primary))
-                             `((,this-var ,(if wrapper
-                                             'com-wrapper
-                                             interface-name))
+                               ,(if wrapper
+                                  this-var
+                                  `(,this-var ,interface-name))
+                                 ,@(cddr primary))
+                             `(,(if wrapper
+                                  this-var
+                                  `(,this-var ,interface-name))
                                ,@primary))
                             ,@(unless (null key)
                                 (make-method-arg-group types key '&key))
@@ -145,19 +145,29 @@
                            (,(if wrapper 'pointer interface-name)
                               ,this-var :aux ,this-var)
                            ,@normalized))))
-                `((defmethod ,method-name ,(method-lambda-list nil)
+                `((closer-mop:defmethod ,method-name ,(method-lambda-list nil)
                     (declare (type ,interface-name ,this-var)
                              ,@(arg-type-decls))
                     ,(callout-form nil))
-                  (defmethod ,method-name ,(method-lambda-list t)
-                    (declare (type com-wrapper ,this-var)
-                             ,@(arg-type-decls))
-                    (let ((,this-var
-                            (or (gethash ',interface-name
-                                         (%wrapper-interface-pointers ,this-var))
-                                (error 'com-error :code error-not-implemented))))
-                      (declare (type pointer ,this-var))
-                      ,(callout-form t))))))
+                  ,(with-gensyms (method-args next-method-list)
+                     `(eval-when (:compile-toplevel :load-toplevel :execute)
+                        (setf (gethash ',method-name (%interface-class-wrapper-functions
+                                                       (find-interface-class ',interface-name)))
+                              (cons
+                                (lambda (,method-args ,next-method-list)
+                                  (declare (ignore ,next-method-list)
+                                           (dynamic-extent ,method-args)
+                                           (type cons ,method-args))
+                                  (destructuring-bind ,(method-lambda-list t) ,method-args
+                                    (declare (type com-wrapper ,this-var)
+                                             ,@(arg-type-decls))
+                                    (let ((,this-var
+                                            (or (gethash ',interface-name
+                                                         (%wrapper-interface-pointers ,this-var))
+                                                (error 'com-error :code error-not-implemented))))
+                                      (declare (type pointer ,this-var))
+                                      ,(callout-form t))))
+                                ',primary)))))))
           ,@(let ((trampoline-name (make-internal-name
                                      (package-name *package*)
                                      interface-name

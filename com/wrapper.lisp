@@ -28,6 +28,10 @@
   ((%interfaces :initarg :interfaces :initform '()
                :reader com-wrapper-class-interfaces)))
 
+(closer-mop:defmethod closer-mop:validate-superclass
+    ((class com-wrapper-class) (superclass com-wrapper-class))
+  nil)
+
 (closer-mop:defmethod shared-initialize :after
   ((class com-wrapper-class) slot-names &rest initargs
    &key interfaces &allow-other-keys)
@@ -39,6 +43,28 @@
                               (assert (guidp (uuid-of interface-class))
                                   (interface-class)
                                 "Interface class' IID is invalid")
+                              (maphash
+                                  (lambda (name fspec &aux (gf (fdefinition name)))
+                                    (destructuring-bind
+                                        (function . primary) fspec
+                                    (add-method                                      
+                                      gf
+                                      (make-instance 'closer-mop:standard-method
+                                        :lambda-list
+                                        (closer-mop:generic-function-lambda-list gf)
+                                        :specializers
+                                        (if (consp name)
+                                          (list* (find-class t)
+                                                 class
+                                                 (mapcar (constantly
+                                                           (find-class t))
+                                                   (cddr primary)))
+                                          (list* class (mapcar (constantly
+                                                                 (find-class t))
+                                                         (cdr primary))))
+                                        :function function))))
+                                  (%interface-class-wrapper-functions
+                                    interface-class))
                               interface-class)
                       interfaces)))
     (setf (slot-value class '%interfaces) interfaces)))
@@ -47,48 +73,47 @@
   ((object com-wrapper) slot-names &rest initargs
    &key context server-info &allow-other-keys)
   (declare (ignore slot-names initargs))
-  (unless (slot-boundp object '%wrapper-interface-pointers)
-    (check-type server-info (or null void server-info))
-    (unless server-info (setf server-info void))    
-    (let* ((context (convert context 'class-context-flags))
-           (class (let ((class (class-of object)))
-                    (check-type class com-wrapper-class)
-                    class))
-           (unknown (with-pointer (pmqi (make-multi-qi :iid 'unknown)
-                                        'multi-qi)
-                      (external-function-call
-                        "CoCreateInstanceEx"
-                        ((:stdcall ole32)
-                         (hresult rv)
-                         ((& clsid) clsid :aux class)
-                         (pointer aggregate :aux &0)
-                         (dword ctx :aux context)
-                         ((& server-info :in t) sinfo :aux server-info)
-                         (dword count :aux 1)
-                         (pointer results :aux pmqi)))
-                      (deref pmqi 'hresult (offsetof 'multi-qi 'hresult))
-                      (deref pmqi 'pointer (offsetof 'multi-qi 'interface))))
-           (interfaces (make-hash-table :test #'eq)))
-      (declare (type pointer unknown))
-      (finalize object (lambda ()
-                           (external-pointer-call
-                             (deref (&+ (deref unknown '*) 2 '*) '*)
-                             ((:stdcall)
-                              (ulong)
-                              (pointer this :aux unknown)))))      
-      (dolist (interface-class
-                (com-wrapper-class-interfaces class))
-        (setf (gethash (class-name interface-class) interfaces)
-              (prog1 (external-pointer-call
-                       (deref (deref unknown '*) '*)
-                       ((:stdcall)
-                        (hresult rv ptr)
-                        (pointer this :aux unknown)
-                        ((& iid) iid :aux interface-class)
-                        ((& pointer :out) ptr :aux &0)))
-               (external-pointer-call
-                 (deref (&+ (deref unknown '*) 2 '*) '*)
-                 ((:stdcall)
-                  (ulong)
-                  (pointer this :aux unknown))))))
-      (setf (%wrapper-interface-pointers object) interfaces))))
+  (check-type server-info (or null void server-info))
+  (unless server-info (setf server-info void))    
+  (let* ((context (convert context 'class-context-flags))
+         (class (let ((class (class-of object)))
+                  (check-type class com-wrapper-class)
+                  class))
+         (unknown (with-pointer (pmqi (make-multi-qi :iid 'unknown)
+                                      'multi-qi)
+                    (external-function-call
+                      "CoCreateInstanceEx"
+                      ((:stdcall ole32)
+                       (hresult rv)
+                       ((& clsid) clsid :aux class)
+                       (pointer aggregate :aux &0)
+                       (dword ctx :aux context)
+                       ((& server-info :in t) sinfo :aux server-info)
+                       (dword count :aux 1)
+                       (pointer results :aux pmqi)))
+                    (deref pmqi 'hresult (offsetof 'multi-qi 'hresult))
+                    (deref pmqi 'pointer (offsetof 'multi-qi 'interface))))
+         (interfaces (make-hash-table :test #'eq)))
+    (declare (type pointer unknown))
+    (finalize object (lambda ()
+                       (external-pointer-call
+                         (deref (&+ (deref unknown '*) 2 '*) '*)
+                         ((:stdcall)
+                          (ulong)
+                          (pointer this :aux unknown)))))      
+    (dolist (interface-class
+              (com-wrapper-class-interfaces class))
+      (setf (gethash (class-name interface-class) interfaces)
+            (prog1 (external-pointer-call
+                     (deref (deref unknown '*) '*)
+                     ((:stdcall)
+                      (hresult rv ptr)
+                      (pointer this :aux unknown)
+                      ((& iid) iid :aux interface-class)
+                      ((& pointer :out) ptr :aux &0)))
+             (external-pointer-call
+               (deref (&+ (deref unknown '*) 2 '*) '*)
+               ((:stdcall)
+                (ulong)
+                (pointer this :aux unknown))))))
+    (setf (%wrapper-interface-pointers object) interfaces)))
