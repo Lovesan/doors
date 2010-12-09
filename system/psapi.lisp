@@ -338,9 +338,9 @@ Callback signature: (:stdcall boolean
                                 (subseq buffer (floor needed (sizeof 'pointer)))
                                 buffer))
         (handle %process :aux process)
-        ((& (simple-array pointer) :out buffer
-           :aux (make-array (floor %needed (sizeof 'pointer))
-                  :element-type 'pointer :initial-element &0)))
+        ((& (simple-array pointer) :out) buffer
+         :aux (make-array (floor %needed (sizeof 'pointer))
+                :element-type 'pointer :initial-element &0))
         (dword cb :aux %needed)
         ((& dword :out) needed :aux)
         (list-modules-flag %filter-flag :aux filter-flag))))

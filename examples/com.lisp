@@ -32,23 +32,23 @@
   (hello-world (hresult)
       (string (& wstring) :optional "Hello, world!")))
 
-(defclass hello-world-object (com-object)
+(closer-mop:defclass hello-world-object (com-object)
   ()
   (:metaclass com-class)
   (:clsid . "{DF748DA7-BCB9-4F67-8D32-F9AA1AAA3ABF}"))
 
-(defmethod hello-world ((object hello-world-object)
+(closer-mop:defmethod hello-world ((object hello-world-object)
                         &optional (string "Hello, world!"))
   (write-line string)
   (values nil string))
 
-(defmethod lock-server ((class (eql (find-class 'hello-world-object))) lock)
+(closer-mop:defmethod lock-server ((class (eql (find-class 'hello-world-object))) lock)
   (if lock
     (add-ref class)
     (release class))
   (values nil lock))
 
-(defmethod create-instance
+(closer-mop:defmethod create-instance
     ((class (eql (find-class 'hello-world-object))) iid &optional outer)
   (if outer
     (error 'com-error :code error-not-implemented)
@@ -68,7 +68,7 @@
                      class :server :multiple-use)))
     register))
 
-(defclass hello-world-wrapper (com-wrapper)
+(closer-mop:defclass hello-world-wrapper (com-wrapper)
   ()
   (:metaclass com-wrapper-class)
   (:interfaces hello-world)

@@ -130,7 +130,7 @@
         (dword signature :aux firmware-table-provider-signature)
         ((& (simple-array dword) :out) buffer
          :aux (make-array rv :element-type 'dword))
-        (dword size rv))))
+        (dword size :aux rv))))
   "Enumerates all system firmware tables of the specified type."
   (firmware-table-provider-signature dword)
   (%buffer pointer :aux &0)

@@ -604,7 +604,7 @@
   ((last-error bool) rv buffer)
   "Retrieves the cycle time each processor in the specified processor group spent executing deferred procedure calls (DPCs) and interrupt service routines (ISRs) since the processor became active."
   (group ushort)
-  (buffer (& qword :out) :aux buffer)
+  (buffer (& qword :out) :aux)
   (length (& dword :out) :aux (sizeof 'qword)))
 
 (define-external-function

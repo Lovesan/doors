@@ -490,7 +490,7 @@
    (coord-from-dword rv))
   "Retrieves the size of the font used by the specified console screen buffer."
   (console-output handle :optional (std-handle :output-handle))
-  (font dword))
+  (font dword :optional))
 
 #-win2000
 (define-symbol-macro console-font-size (console-font-size))
@@ -559,15 +559,18 @@
     (:stdcall kernel32)
   ((last-error dword not-zero) rv
    (if (<= rv process-count)
-     (subseq list 0 dw)
+     (subseq list 0 rv)
      (external-function-call "GetConsoleProcessList"
        ((:stdcall kernel32)
-        (dword rv (subseq new-list 0 rv))
-        ((& (~ dword) :out) new-list :aux (make-list count))
-        (dword count :aux rv)))))
+        (dword %rv (subseq new-list 0 %rv))
+        ((& (~ dword) :out) new-list :aux (make-list rv))
+        (dword process-count :aux rv)))))
   "Retrieves a list of the processes attached to the current console."
   (list (& (~ dword) :out) :aux '())
   (process-count dword :aux 0))
+
+#-win2000
+(define-symbol-macro console-process-list (console-process-list))
 
 (define-external-function
     ("GetConsoleScreenBufferInfo" console-screen-buffer-info)
