@@ -35,6 +35,7 @@
 (closer-mop:defmethod shared-initialize :after
   ((class com-wrapper-class) slot-names &rest initargs
    &key interfaces &allow-other-keys)
+  (declare (ignore slot-names initargs))
   (let ((interfaces (mapcar (lambda (interface-class)
                               (unless (typep interface-class
                                              'com-interface-class)

@@ -103,12 +103,31 @@
     #:facility-sxs
     #:facility-windows-ce
     #:facility-http
+    #:facility-usermode-common-logging
+    #:facility-usermode-filter-manager
     #:facility-background-copy
     #:facility-configuration
     #:facility-state-management
     #:facility-meta-directory
     #:facility-windows-update
     #:facility-directory-service
+    #:facility-graphics
+    #:facility-shell
+    #:facility-tpm-services
+    #:facility-tmp-software
+    #:facility-pla
+    #:facility-fve
+    #:facility-fwp
+    #:facility-winrm
+    #:facility-ndis
+    #:facility-usermode-virtualization
+    #:facility-usermode-volmgr
+    #:facility-bcd
+    #:facility-usermode-vhd
+    #:facility-sdiag
+    #:facility-web-services
+    #:facility-windows-defender
+    #:facility-opc
     
     #:make-hresult
     #:hresult-from-win32
@@ -303,6 +322,144 @@
     #:system-time-to-file-time
     #:system-time-to-tz-specific-local-time
     #:tz-specific-local-time-to-system-time
+    
+    ;;system information stuff
+    #:dock-info
+    #:dock-info-undocked
+    #:dock-info-docked
+    #:dock-info-user-supplied
+    #:dock-info-user-undocked
+    #:dock-info-user-docked
+    #:hw-profile-info
+    #:make-hw-profile-info
+    #:hw-dock-info
+    #:hw-profile-guid
+    #:hw-profile-name
+    #:processor-architecture
+    #:processor-architecture-intel
+    #:processor-architecture-amd64
+    #:processor-architecture-ia64
+    #:processor-architecture-unknown
+    #:processor-type
+    #:processor-intel-386
+    #:processor-intel-486
+    #:processor-intel-pentium
+    #:processor-intel-ia64
+    #:processor-amd-x86-64
+    #:system-info
+    #:make-system-info
+    #:sysinfo-processor-architecture
+    #:sysinfo-page-size
+    #:sysinfo-minimum-application-address
+    #:sysinfo-maximum-application-address
+    #:sysinfo-active-processor-mask
+    #:sysinfo-number-of-processors
+    #:sysinfo-processor-type
+    #:sysinfo-allocation-granularity
+    #:sysinfo-processor-level
+    #:sysinfo-processor-revision
+    #:computer-name-format
+    #:computer-name-netbios
+    #:computer-name-dns-hostname
+    #:computer-name-dns-domain
+    #:computer-name-dns-fully-qualified
+    #:computer-name-physical-netbios
+    #:computer-name-physical-dns-hostname
+    #:computer-name-physical-dns-domain
+    #:computer-name-physical-dns-fully-qualified
+    #:extended-name-format
+    #:name-unknown
+    #:name-fully-qualified-dn
+    #:name-sam-compatible
+    #:name-display
+    #:name-unique-id
+    #:name-canonical
+    #:name-user-principal
+    #:name-canonical*
+    #:name-service-principal
+    #:name-dns-domain
+    #:dns-hostname-to-computer-name
+    #:enum-system-firmware-tables
+    #:expand-environment-strings
+    #:computer-name
+    #:computer-name*
+    #:computer-object-name
+    #:current-hw-profile
+    #:firmware-environment-variable
+    #:native-system-info
+    #:product-type
+    #:product-business
+    #:product-business-n
+    #:product-cluster-server
+    #:product-datacenter-server
+    #:product-datacenter-server-core
+    #:product-datacenter-server-core-v
+    #:product-datacenter-server-v
+    #:product-enterprise
+    #:product-enterprise-n
+    #:product-enterprise-server
+    #:product-enterprise-server-core
+    #:product-enterprise-server-core-v
+    #:product-enterprise-server-v
+    #:product-enterprise-server-ia64
+    #:product-home-basic
+    #:product-home-premium
+    #:product-home-premium-n
+    #:product-hyper-v
+    #:product-medium-business-server-management
+    #:product-medium-business-server-messaging
+    #:product-medium-business-server-security
+    #:product-professional
+    #:product-professional-n
+    #:product-server-for-small-business
+    #:product-server-for-small-business-v
+    #:server-foundation
+    #:product-small-business-server
+    #:product-solution-embedded-server
+    #:product-standard-server
+    #:product-standard-server-core
+    #:product-standard-server-core-v
+    #:product-standard-server-v
+    #:product-starter
+    #:product-starter-n
+    #:product-storage-enterprise-server
+    #:product-storage-express-server
+    #:product-storage-standard-server
+    #:product-storage-workgroup-server
+    #:product-undefined
+    #:product-ultimate
+    #:product-ultimate-n
+    #:product-web-server
+    #:product-web-server-core
+    #:product-info
+    #:system-directory
+    #:system-firmware-table
+    #:system-registry-quota
+    #:system-windows-directory
+    #:windows-directory
+    #:system-wow64-directory
+    #:user-name
+    #:user-name*
+    #:processor-features
+    #:pf-3dnow-instructions-available
+    #:pf-channels-enabled
+    #:pf-compare-exchange-double
+    #:pf-compare-exchange-128
+    #:pf-compare-64-exchange-128
+    #:pf-floating-point-emulated
+    #:pf-floating-point-precision-errata
+    #:pf-mmx-instructions-available
+    #:pf-nx-enabled
+    #:pf-pae-enabled
+    #:pf-rdtsc-instruction-available
+    #:pf-sse3-insructions-available
+    #:pf-xmmi-instructions-available
+    #:pf-xmmi64-instructions-available
+    #:pf-xsave-enabled
+    #:is-processor-feature-present
+    #:translate-account-name
+    #:verify-version-info
+    #:ver-condition-mask
     
     ;;console stuff
     #:console-event

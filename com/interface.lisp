@@ -163,19 +163,6 @@
                           com-object com-wrapper))
   (:prototype (type) nil)
   (:prototype-expansion (type) nil)
-  (:converter (lisp-value type)    
-    (etypecase lisp-value
-      (null &0)
-      (com-interface (com-interface-pointer lisp-value))
-      (com-wrapper (or (gethash (com-interface-type-name type)
-                                (%wrapper-interface-pointers lisp-value))
-                       (error 'com-error :code error-no-interface)))
-      (com-object  (prog1
-                    (com-interface-pointer
-                      (funcall 'acquire-interface
-                               lisp-value
-                               (com-interface-type-name type)))
-                    (funcall 'release lisp-value)))))
   (:translator (pointer type)
     (translate-interface pointer
                          (find-interface-class

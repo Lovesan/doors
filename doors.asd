@@ -64,6 +64,7 @@
                         :pathname "system"
                         :serial t
                         :components ((:file "console")
+                                     (:file "registry")
                                      (:file "memory")
                                      (:file "processes")
                                      (:file "psapi")

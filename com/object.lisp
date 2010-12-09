@@ -206,3 +206,17 @@
                             (error 'com-error :code error-class-not-registered)))))
            (setf (deref ,pointer 'guid) (the guid ,guid))
            ,value)))))
+
+(defmethod convert-value (lisp-value (type com-interface-type))
+  (etypecase lisp-value
+    (null &0)
+    (com-interface (com-interface-pointer lisp-value))
+    (com-wrapper (or (gethash (com-interface-type-name type)
+                              (%wrapper-interface-pointers lisp-value))
+                     (error 'com-error :code error-no-interface)))
+    (com-object  (prog1
+                  (com-interface-pointer
+                    (funcall 'acquire-interface
+                             lisp-value
+                             (com-interface-type-name type)))
+                  (funcall 'release lisp-value)))))

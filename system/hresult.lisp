@@ -53,12 +53,31 @@
   :sxs
   :windows-ce
   :http
+  :usermode-common-logging
+  :usermode-filter-manager  
   (:background-copy 32)
   :configuration
   :state-management
   :meta-directory
   :windows-update
-  :directory-service)
+  :directory-service
+  :graphics
+  :shell
+  :tpm-services
+  :tpm-software
+  (:pla 48)
+  :fve
+  :fwp
+  :winrm
+  :ndis
+  :usermode-virtualization
+  :usermode-volmgr
+  :bcd
+  :usermode-vhd
+  :sdiag
+  :web-services
+  (:windows-defender 80)
+  :opc)
 
 (declaim (inline make-hresult))
 (defun make-hresult (errorp facility code)
@@ -164,6 +183,8 @@
          ,slots
          ,@(remove :conc-name options :key #'car))
        ',name)))
+
+(deftype hresult () '(or null windows-condition))
 
 (define-immediate-type hresult-type ()
   ()
