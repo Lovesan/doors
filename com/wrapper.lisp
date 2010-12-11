@@ -51,6 +51,7 @@
                                     (add-method                                      
                                       gf
                                       (make-instance 'closer-mop:standard-method
+                                        #+ccl :generic-function #+ccl gf
                                         :lambda-list
                                         (closer-mop:generic-function-lambda-list gf)
                                         :specializers
