@@ -497,7 +497,7 @@
 
 #-(or win2000 winxp winhomeserver winxp64)
 (define-external-function
-    ("GetProcessIdOdThread" process-id-of-thread)
+    ("GetProcessIdOfThread" process-id-of-thread)
     (:stdcall kernel32)
   ((last-error dword not-zero))
   "Retrieves the process identifier of the process associated with the specified thread."

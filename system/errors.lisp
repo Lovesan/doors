@@ -120,18 +120,6 @@
   (frequency dword)
   (duration dword))
 
-#-win2000
-(define-external-function
-    ("CaptureStackBackTrace" (:camel-case))
-    (:stdcall kernel32)
-  (ushort rv (values (subseq backtrace 0 rv)
-                     back-trace-hash))
-  (frames-to-skil ulong)
-  (frames-to-capture ulong)
-  (backtrace (& (simple-array pointer) :out)
-             :aux (make-array frames-to-capture))
-  (back-trace-hash (& ulong :out) :aux))
-
 (define-external-function
     (#+doors.unicode "FatalAppExitW"
      #-doors.unicode "FatalAppExitA"

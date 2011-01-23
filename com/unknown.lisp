@@ -31,7 +31,7 @@
 (define-interface unknown (iid-unknown)
   "Lisp wrapper for IUnknown interface"
   (query-interface
-    (hresult rv
+    ((hresult com-error) rv
       (translate-interface
         (com-interface-pointer interface) iid T))
     (iid (& iid))
@@ -39,20 +39,41 @@
   (add-ref (ulong))
   (release (ulong)))
 
+(defmethod add-ref :around ((object unknown))
+  (symbol-macrolet ((ref-count (aref (the (simple-array fixnum (1))
+                                          (closer-mop:standard-instance-access
+                                            object
+                                            ref-count-slot-location))
+                                     0)))
+      (prog1 (call-next-method)
+       (incf ref-count))))
+
+(defmethod release :around ((object unknown))
+  (symbol-macrolet ((ref-count (aref (the (simple-array fixnum (1))
+                                          (closer-mop:standard-instance-access
+                                            object
+                                            ref-count-slot-location))
+                                     0)))
+    (if (> ref-count 0)
+      (prog1 (call-next-method)
+       (decf ref-count))
+      0)))
+
 (defmethod shared-initialize :after
-  ((object unknown) slot-names &rest initargs &key finalize &allow-other-keys)
+  ((object unknown) slot-names &rest initargs &key &allow-other-keys)
   (declare (ignore slot-names initargs))
-  (when finalize
-    (let ((pobject (com-interface-pointer object)))
-      (declare (type pointer pobject))
-      (when (&? pobject)
-        (finalize object (lambda ()
+  (let ((pobject (com-interface-pointer object))
+        (ref-count (closer-mop:standard-instance-access object ref-count-slot-location)))
+    (declare (type pointer pobject)
+             (type (simple-array fixnum (1)) ref-count))
+    (when (&? pobject)
+      (finalize object (lambda (&aux (count (aref ref-count 0)))
+                         (dotimes (i count)
                            (external-pointer-call
                              (deref (&+ (deref pobject '*) 2 '*) '*)
                              ((:stdcall)
                               (ulong)
-                              (pointer this :aux pobject))))))))
-  object)
+                              (pointer this :aux pobject)))))))))
 
 (defmacro with-interface ((var interface) &body body)
   `(let ((,var ,interface))

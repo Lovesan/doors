@@ -122,7 +122,9 @@
                          "NT"
                          (hresult-facility code))
                        (hresult-code code)
-                       (or (let ((code (if (eq :win32 (hresult-facility code))
+                       (or (and (= code 1)
+                                "Successful but nonstandard completion of operation")
+                           (let ((code (if (eq :win32 (hresult-facility code))
                                          (hresult-code code)
                                          code)))
                              (with-pointer (pp &0 'pointer)
@@ -187,9 +189,9 @@
 (deftype hresult () '(or null windows-condition))
 
 (define-immediate-type hresult-type ()
-  ()
+  ((condition-class :initform nil :initarg :condition-class
+                    :reader hresult-type-condition-class))
   (:base-type dword)
-  (:simple-parser hresult)
   (:lisp-type (type) '(or null windows-condition))
   (:prototype (type) nil)
   (:prototype-expansion (type) nil)
@@ -201,7 +203,8 @@
     (if (zerop value)
       nil
       (let* ((errorp (logbitp 31 value))
-             (condition-name (gethash value *registered-results*))
+             (condition-name (or (hresult-type-condition-class type)
+                                 (gethash value *registered-results*)))
              (condition (make-condition
                           (or condition-name
                               (if errorp 'windows-error 'windows-status))
@@ -221,7 +224,8 @@
          (if (zerop ,code)
            nil
            (let* ((,errorp (logbitp 31 ,code))
-                  (,condition-name (gethash ,code *registered-results*))
+                  (,condition-name (or ',(hresult-type-condition-class type)
+                                       (gethash ,code *registered-results*)))
                   (,condition (make-condition
                                 (or ,condition-name
                                     (if ,errorp 'windows-error 'windows-status))
@@ -232,3 +236,13 @@
   (:cleaner-expansion (pointer value type) nil)
   (:allocator-expansion (value type) `(alloc 'dword))
   (:deallocator-expansion (pointer type) `(free ,pointer 'dword)))
+
+(define-type-parser hresult (&optional condition-class)
+  (check-type condition-class symbol)
+  (make-instance 'hresult-type :condition-class condition-class))
+
+(defmethod unparse-type ((type hresult-type))
+  (let ((condition-class (hresult-type-condition-class type)))
+    (if condition-class
+      `(hresult ,condition-class)
+      'hresult)))

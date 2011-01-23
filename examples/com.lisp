@@ -54,7 +54,7 @@
     (error 'com-error :code error-not-implemented)
     (progn
       (unless (member (class-name iid)
-                      '(unknown class-factory hello-world))
+                      '(unknown hello-world))
         (error 'com-error :code error-no-interface))
       (let ((object (make-instance class)))
         (values nil outer iid (acquire-interface object iid))))))

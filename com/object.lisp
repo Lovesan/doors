@@ -106,7 +106,7 @@
   (declare (ignore args))
   (error 'com-error :code error-not-implemented))
 
-(defun acquire-interface (object class &optional finalize)
+(defun acquire-interface (object class &optional add-ref)
   (declare (type com-object object)
            (type iid class))
   "Acquires specified interface wrapper for an object."
@@ -121,9 +121,8 @@
                               (gethash class (com-object-interface-pointers object))
                               pointer)
                         pointer)))
-         (interface (translate-interface pointer class finalize)))
-    (when (and finalize (not (subtypep (class-name class)
-                                       'unknown)))
+         (interface (translate-interface pointer class add-ref)))
+    (when (and add-ref (not (subtypep (class-name class) 'unknown)))
       (finalize interface (lambda () (release object))))
     (add-ref object)
     interface))

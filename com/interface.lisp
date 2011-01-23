@@ -35,7 +35,7 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
 
 (closer-mop:defclass com-interface-class (standard-class)
-  ((%iid :initform nil :initarg :iid)   
+  ((%iid :initform nil :initarg :iid)
    (vtable-name :initform nil
                 :initarg :vtable-name
                 :reader com-interface-class-vtable-name)
@@ -56,8 +56,7 @@
   
 (closer-mop:defclass com-interface ()
   ((com-pointer :initform &0 :initarg :pointer)
-   (finalize :initarg :finalize :allocation :class
-             :initform nil))
+   (ref-count :initform (make-array 1 :element-type 'fixnum :initial-element 0)))
   (:metaclass com-interface-class))
   
 (closer-mop:defclass com-wrapper ()
@@ -105,7 +104,7 @@
 (declaim (inline com-interface-pointer))
 (defun com-interface-pointer (interface)
   (declare (type com-interface interface))
-  (closer-mop:standard-instance-access interface pointer-slot-location))
+  (the pointer (closer-mop:standard-instance-access interface pointer-slot-location)))
 
 (declaim (inline com-interface-method-pointer))
 (defun com-interface-method-pointer (interface method-name)
@@ -117,14 +116,20 @@
                               :test #'eq)
                     (error "Interface ~s has no method named ~s"
                            (class-name class) method-name))))
-    (deref (deref (com-interface-pointer interface) 'pointer)
-           'pointer
-           (* index (sizeof 'pointer)))))
+    (the pointer (deref (deref (com-interface-pointer interface) 'pointer)
+                        'pointer
+                        (* index (sizeof 'pointer))))))
+
+(defconstant ref-count-slot-location
+    (closer-mop:slot-definition-location
+        (find 'ref-count
+              (closer-mop:class-slots (find-class 'com-interface))
+              :key #'closer-mop:slot-definition-name)))
 
 (defmethod uuid-of ((class com-interface-class))
   (slot-value class '%iid))
 
-(defun translate-interface (pointer class &optional finalize)
+(defun translate-interface (pointer class &optional add-ref)
   (declare (type pointer pointer)
            (type (or symbol guid com-interface-class) class)
            (optimize (speed 3)))
@@ -134,13 +139,15 @@
     (let* ((address (the size-t (&& pointer)))
            (typed-pointer (cons address class))
            (interface (gethash typed-pointer *pointer-to-interface-mapping*)))
-      (if interface
-        (when finalize
-          (initialize-instance interface :finalize t))
+      (unless interface
         (setf (gethash typed-pointer *pointer-to-interface-mapping*)
-              (setf interface (make-instance class
-                                :pointer pointer
-                                :finalize finalize))))
+              (setf interface (make-instance class :pointer pointer))))
+      (when add-ref
+        (incf (aref (the (simple-array fixnum (1))
+                         (closer-mop:standard-instance-access
+                           interface
+                           ref-count-slot-location))
+                    0)))
       interface)
     nil))
 
@@ -155,19 +162,16 @@
   ((name :initform nil
          :initarg :name
          :reader com-interface-type-name)
-   (finalize :initform nil
-             :initarg :finalize
-             :reader com-interface-type-finalize-p))
+   (add-ref :initform nil :initarg :add-ref
+             :reader com-interface-type-add-ref-p))
   (:base-type pointer)
-  (:lisp-type (type) `(or null ,(com-interface-type-name type)
-                          com-object com-wrapper))
+  (:lisp-type (type) `(or null ,(com-interface-type-name type) com-object com-wrapper))
   (:prototype (type) nil)
   (:prototype-expansion (type) nil)
   (:translator (pointer type)
     (translate-interface pointer
-                         (find-interface-class
-                           (com-interface-type-name type))
-                         (com-interface-type-finalize-p type)))
+                         (find-interface-class (com-interface-type-name type))
+                         (com-interface-type-add-ref-p type)))
   (:converter-expansion (value type)
     (once-only (value)
       `(etypecase ,value
@@ -185,7 +189,7 @@
     `(translate-interface ,pointer-form
                           (find-interface-class
                             ',(com-interface-type-name type))
-                          ,(and (com-interface-type-finalize-p type)
+                          ,(and (com-interface-type-add-ref-p type)
                                 T)))
   (:allocator-expansion (value type)
     `(alloc 'pointer))

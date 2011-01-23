@@ -101,17 +101,16 @@
              (lognot (logand #xFFFF (lognot x)))
              x))))
 
-(define-struct (console-font-info                 
-                 (:conc-name console-))
+(define-struct (console-font-info (:conc-name console-fi-))
     "Contains information for a console font."
   (font dword)
   (font-size coord))
 
 
 (define-struct (console-font-info*                 
-                 (:conc-name console-))
+                 (:conc-name console-fi-))
     "Contains extended information for a console font."
-  (font-info-struct-size ulong :initform (sizeof 'console-font-info*))
+  (struct-size* ulong :initform (sizeof 'console-font-info*))
   (font* dword)
   (font-size* coord)
   (font-family uint)

@@ -167,7 +167,6 @@
     #:non-system-error
     #:system-error-code-p
     #:beep
-    #:capture-stack-back-trace
     #:fatal-app-exit
     #:flash-window
     #:flash-window*
@@ -501,15 +500,15 @@
     #:coord-from-dword
     #:console-font-info
     #:make-console-font-info
-    #:console-font
-    #:console-font-size
+    #:console-fi-font
+    #:console-fi-font-size
     #:console-font-info*
     #:make-console-font-info*
-    #:console-font*
-    #:console-font-size*
-    #:console-font-family
-    #:console-font-weight
-    #:console-face-name
+    #:console-fi-font*
+    #:console-fi-font-size*
+    #:console-fi-font-family
+    #:console-fi-font-weight
+    #:console-fi-face-name
     #:console-history
     #:make-console-history-info
     #:console-history-buffer-size

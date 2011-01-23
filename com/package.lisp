@@ -172,14 +172,14 @@
     #:revoke-class-object
     #:class-object
     #:create-com-instance
-    #:initialize
-    #:uninitialize
+    #:initialize-com
+    #:uninitialize-com
     #:create-guid
     #:task-mem-alloc
     #:task-mem-realloc
     #:task-mem-free
     #:string-from-iid
-    #:initialize*
+    #:initialize-com*
     #:clsid-from-progid
     #:clsid-from-progid*
     #:clsid-from-string

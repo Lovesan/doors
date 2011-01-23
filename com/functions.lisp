@@ -73,14 +73,14 @@
   (object (& unknown :out) :aux))
 
 (define-external-function
-    ("CoInitialize" initialize)
+    ("CoInitialize" initialize-com)
     (:stdcall ole32)
   (hresult)
   "Initializes the COM library on the current thread and identifies the concurrency model as single-thread apartment (STA)."
   (reserved pointer :aux &0))
 
 (define-external-function
-    ("CoUninitialize" uninitialize)
+    ("CoUninitialize" uninitialize-com)
     (:stdcall ole32)
   (void)
   "Closes the COM library on the current thread, unloads all DLLs loaded by the thread, frees any other resources that the thread maintains, and forces all RPC connections on the thread to close. ")
@@ -129,7 +129,7 @@
   (lpsz (& pointer :out) :aux))
 
 (define-external-function
-    ("CoInitializeEx" initialize*)
+    ("CoInitializeEx" initialize-com*)
     (:stdcall ole32)
   (hresult rv)
   "Initializes the COM library for use by the calling thread, sets the thread's concurrency model, and creates a new apartment for the thread if one is required."

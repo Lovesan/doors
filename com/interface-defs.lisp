@@ -154,9 +154,9 @@
                         (setf (gethash ',method-name (%interface-class-wrapper-functions
                                                        (find-interface-class ',interface-name)))
                               (cons
+                                #-ccl
                                 (lambda (,method-args ,next-method-list)
                                   (declare (ignore ,next-method-list)
-                                           (dynamic-extent ,method-args)
                                            (type cons ,method-args))
                                   (destructuring-bind ,(method-lambda-list t) ,method-args
                                     (declare (type com-wrapper ,this-var)
@@ -167,6 +167,15 @@
                                                 (error 'com-error :code error-not-implemented))))
                                       (declare (type pointer ,this-var))
                                       ,(callout-form t))))
+                                #+ccl
+                                (lambda ,(method-lambda-list t)
+                                  (declare (type com-wrapper ,this-var))
+                                  (let ((,this-var
+                                            (or (gethash ',interface-name
+                                                         (%wrapper-interface-pointers ,this-var))
+                                                (error 'com-error :code error-not-implemented))))
+                                      (declare (type pointer ,this-var))
+                                      ,(callout-form t)))
                                 ',primary)))))))
           ,@(let ((trampoline-name (make-internal-name
                                      (package-name *package*)
@@ -272,10 +281,10 @@
                 (closer-mop:finalize-inheritance (find-class ',name))
                 ,form
                 (setf (slot-value (find-class ',name) '%iid) ,iid-name)
-                (define-type-parser ,name (&optional finalize)
+                (define-type-parser ,name (&optional add-ref)
                   (make-instance 'com-interface-type
                     :name ',name
-                    :finalize finalize)))))
+                    :add-ref add-ref)))))
          ,@(let ((methods (append parent-methods direct-methods)))
             `((define-struct (,vtable-name
                                ,@(when parent-vtable-name
