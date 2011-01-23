@@ -38,9 +38,11 @@
   (if lock
     (if (slot-value class 'locked)
       (warn 'windows-status :code status-false)
-      (add-ref class))
+      (progn (add-ref class)
+             (setf (slot-value class 'locked) t)))
     (if (slot-value class 'locked)
-      (release class)
+      (progn (release class)
+             (setf (slot-value class 'locked) nil))
       (warn 'windows-status :code status-false)))
   (values nil lock))
 
