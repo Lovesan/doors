@@ -196,7 +196,9 @@
                                            ,(make-defmethod-call-form
                                                 method-name this-var primary optional key))
                                          ,rv-var)))
-                           (if (eq return-type 'hresult)
+                           (if (or (eq return-type 'hresult)
+                                   (and (consp return-type)
+                                        (eq (car return-type) 'hresult)))
                              `(let ((,status nil))
                                 (declare (type (or null windows-status) ,status))
                                 (handler-case

@@ -25,8 +25,7 @@
 (in-package #:doors.com)
 
 (closer-mop:defclass com-wrapper-class (com-class)
-  ((%interfaces :initarg :interfaces :initform '()
-               :reader com-wrapper-class-interfaces)))
+  ())
 
 (closer-mop:defmethod closer-mop:validate-superclass
     ((class com-wrapper-class) (superclass com-wrapper-class))
@@ -78,7 +77,8 @@
   (unless server-info (setf server-info void))    
   (let* ((context (convert context 'class-context-flags))
          (class (let ((class (class-of object)))
-                  (check-type class com-wrapper-class)
+                  (assert (typep class 'com-wrapper-class) ()
+                    'type-error :datum class :expected-type 'com-wrapper-class)
                   class))
          (unknown (with-pointer (pmqi (make-multi-qi :iid 'unknown)
                                       'multi-qi)
@@ -102,8 +102,7 @@
                          ((:stdcall)
                           (ulong)
                           (pointer this :aux unknown)))))      
-    (dolist (interface-class
-              (com-wrapper-class-interfaces class))
+    (dolist (interface-class (slot-value class '%interfaces))
       (setf (gethash (class-name interface-class) interfaces)
             (prog1 (external-pointer-call
                      (deref (deref unknown '*) '*)

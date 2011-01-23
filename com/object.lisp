@@ -37,12 +37,23 @@
     "All lisp-side COM object classes must inherit from this class."))
   
 (closer-mop:defclass com-class (com-object standard-class)
-  ((%clsid :initform nil :initarg :clsid)))
+  ((%clsid :initform nil :initarg :clsid)
+   (%interfaces :initarg :interfaces :initform '())))
   
 (closer-mop:defmethod shared-initialize :after
-  ((class com-class) slot-names &rest initargs &key clsid &allow-other-keys)
+  ((class com-class) slot-names &rest initargs &key clsid interfaces &allow-other-keys)
   (declare (ignore slot-names initargs))
-  (unless (null clsid)    
+  (setf (slot-value class '%interfaces)
+        (remove-duplicates
+          (cons
+            (find-interface-class 'unknown)
+            (mapcar (lambda (interface-class)
+                      (unless (typep interface-class 'com-interface-class)
+                        (setf interface-class (find-interface-class interface-class)))
+                      interface-class)
+              interfaces))
+          :test #'eq))
+  (unless (null clsid)
     (setf (gethash (setf (slot-value class '%clsid)
                          (etypecase clsid
                            (guid clsid)
@@ -112,6 +123,10 @@
   "Acquires specified interface wrapper for an object."
   (unless (typep class 'com-interface-class)
     (setf class (find-interface-class class)))
+  (unless (let ((object-class (class-of object)))
+            (and (typep object-class 'com-class)
+                 (member class (slot-value object-class '%interfaces) :test #'eq)))
+    (error 'com-error :code error-no-interface))
   (let* ((pointer (or (gethash class (com-object-interface-pointers object))
                       (let* ((vtable (symbol-value
                                        (com-interface-class-vtable-name class)))

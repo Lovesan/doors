@@ -24,6 +24,26 @@
 
 (in-package #:doors.com.examples)
 
+(closer-mop:defclass factory-class (com-class)
+  ((locked :initform nil))
+  (:interfaces class-factory)
+  (:metaclass com-class))
+
+(closer-mop:defmethod create-instance ((class factory-class) iid &optional outer)
+  (if outer
+    (error 'com-error :code error-not-implemented)
+    (values nil outer iid (acquire-interface (make-instance class) iid))))
+
+(closer-mop:defmethod lock-server ((class factory-class) lock)
+  (if lock
+    (if (slot-value class 'locked)
+      (warn 'windows-status :code status-false)
+      (add-ref class))
+    (if (slot-value class 'locked)
+      (release class)
+      (warn 'windows-status :code status-false)))
+  (values nil lock))
+
 (define-interface hello-world
     ((iid-hello-world
        #xF9210244 #x38D1 #x49C0
@@ -34,7 +54,8 @@
 
 (closer-mop:defclass hello-world-object (com-object)
   ()
-  (:metaclass com-class)
+  (:metaclass factory-class)
+  (:interfaces hello-world)
   (:clsid . "{DF748DA7-BCB9-4F67-8D32-F9AA1AAA3ABF}"))
 
 (closer-mop:defmethod hello-world ((object hello-world-object)
@@ -42,31 +63,13 @@
   (write-line string)
   (values nil string))
 
-(closer-mop:defmethod lock-server ((class (eql (find-class 'hello-world-object))) lock)
-  (if lock
-    (add-ref class)
-    (release class))
-  (values nil lock))
-
-(closer-mop:defmethod create-instance
-    ((class (eql (find-class 'hello-world-object))) iid &optional outer)
-  (if outer
-    (error 'com-error :code error-not-implemented)
-    (progn
-      (unless (member (class-name iid)
-                      '(unknown hello-world))
-        (error 'com-error :code error-no-interface))
-      (let ((object (make-instance class)))
-        (values nil outer iid (acquire-interface object iid))))))
-
 (defun register-server ()
   (handler-bind
     ((windows-status #'muffle-warning))
-    (initialize))
-  (let* ((class (find-class 'hello-world-object))
-         (register (register-class-object
-                     class :server :multiple-use)))
-    register))
+    (initialize-com))
+  (register-class-object (find-class 'hello-world-object)
+                         :server
+                         :multiple-use))
 
 (closer-mop:defclass hello-world-wrapper (com-wrapper)
   ()
