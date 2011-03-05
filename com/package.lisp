@@ -65,6 +65,7 @@
     #:com-object
     #:find-com-class
     #:acquire-interface
+    #:deinitialize-vtables
     #:reinitialize-vtables
     
     ;;IUnknown

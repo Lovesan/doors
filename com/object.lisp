@@ -240,6 +240,22 @@
                              (com-interface-type-name type)))
                   (funcall 'release lisp-value)))))
 
+(defun deinitialize-vtables ()
+  (gc :full t)
+  #+thread-support
+  (%ensure-mta-post-mortem-thread)
+  #+thread-support
+  (bt:with-lock-held (*mta-post-mortem-lock*)
+    (push (list (lambda ()
+                  (bt:release-lock *mta-post-mortem-lock*)
+                  (loop)))
+          *mta-post-mortem-queue*)
+    (bt:condition-notify *mta-post-mortem-condvar*))
+  (bt:with-lock-held (*mta-post-mortem-lock*)
+    (bt:destroy-thread *mta-post-mortem-thread*))
+  (gc :full t)
+  (values))
+
 (defun reinitialize-vtables ()  
   (%ensure-mta-post-mortem-thread)
   (setf *registered-interfaces*
