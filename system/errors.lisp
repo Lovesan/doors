@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -46,6 +46,8 @@
      "More data is available.")
    (out-of-memory #x8007000E
      "Ran out of memory")
+   (not-enough-memory #x80070008
+     "Not enough storage is available to process this command.")
    (invalid-arg #x80070057
      "One or more arguments are invalid")
    (invalid-handle #x80070006

@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -24,11 +24,8 @@
 
 (in-package #:doors.com)
 
-(define-guid iid-unknown
-  #x00000000 #x0000 #x0000
-  #xC0 #x00 #x00 #x00 #x00 #x00 #x00 #x46)
-
-(define-interface unknown (iid-unknown)
+(define-interface unknown
+    ((iid-unknown "{00000000-0000-0000-C000-000000000046}"))
   "Lisp wrapper for IUnknown interface"
   (query-interface
     ((hresult com-error) rv
@@ -62,18 +59,43 @@
 (defmethod shared-initialize :after
   ((object unknown) slot-names &rest initargs &key &allow-other-keys)
   (declare (ignore slot-names initargs))
-  (let ((pobject (com-interface-pointer object))
-        (ref-count (closer-mop:standard-instance-access object ref-count-slot-location)))
+  (let* ((pobject (com-interface-pointer object))
+         (thread (bt:current-thread))
+         (thread-id (%current-tid))
+         (apartment (%apartment-type))
+         (ref-count (closer-mop:standard-instance-access object ref-count-slot-location))
+         (finalizer (lambda (unknown count)
+                      (declare (type pointer unknown)
+                               (type non-negative-fixnum count))
+                      (without-interrupts
+                        (dotimes (i count)
+                          (%release unknown))))))
     (declare (type pointer pobject)
+             (type dword thread-id)
+             (type function finalizer)
              (type (simple-array fixnum (1)) ref-count))
     (when (&? pobject)
-      (finalize object (lambda (&aux (count (aref ref-count 0)))
-                         (dotimes (i count)
-                           (external-pointer-call
-                             (deref (&+ (deref pobject '*) 2 '*) '*)
-                             ((:stdcall)
-                              (ulong)
-                              (pointer this :aux pobject)))))))))
+      (finalize object (lambda ()
+                         #+thread-support
+                         (let ((this-thread-id (%current-tid))
+                               (this-apartment (%apartment-type)))
+                           (if (= thread-id this-thread-id)
+                             (when (eq apartment this-apartment)
+                               (funcall finalizer pobject (aref ref-count 0)))
+                             (case apartment
+                               (:sta (when (bt:thread-alive-p thread)
+                                       (bt:interrupt-thread thread
+                                         (lambda (finalizer apartment unknown count)
+                                           (when (eq apartment (%apartment-type))
+                                             (funcall finalizer unknown count)))
+                                         finalizer apartment pobject (aref ref-count 0))))
+                               (T (bt:with-lock-held (*mta-post-mortem-lock*)
+                                    (push (list finalizer pobject (aref ref-count 0))
+                                          *mta-post-mortem-queue*)
+                                    (bt:condition-notify *mta-post-mortem-condvar*))))))
+                         #-thread-support
+                         (when (eq apartment (%apartment-type))
+                           (funcall finalizer pobject (aref ref-count 0))))))))
 
 (defmacro with-interface ((var interface) &body body)
   `(let ((,var ,interface))

@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -24,6 +24,106 @@
 
 (in-package #:cl-user)
 
+(defpackage #:doors.ui
+  (:use #:cl #:alexandria #:virgil #:doors #:doors.gdi)
+  (:export
+    ;;window classes
+    #:class-style
+    #:cs-byte-align-center
+    #:cs-byte-align-window
+    #:cs-class-dc
+    #:cs-dbl-clks
+    #:cs-drop-shadow
+    #:cs-global-class
+    #:cs-hredraw
+    #:cs-no-close
+    #:cs-own-dc
+    #:cs-parent-dc
+    #:cs-save-bits
+    #:cs-vredraw
+    #:wndclass
+    #:make-wndclass
+    #:wndclass-style
+    #:wndclass-wndproc
+    #:wndclass-cls-extra
+    #:wndclass-wnd-extra
+    #:wndclass-instance
+    #:wndclass-icon
+    #:wndclass-cursor
+    #:wndclass-background
+    #:wndclass-menu-name
+    #:wndclass-class-name
+    #:wndclass*
+    #:make-wndclass*
+    #:wndclass-style*
+    #:wndclass-wndproc*
+    #:wndclass-cls-extra*
+    #:wndclass-wnd-extra*
+    #:wndclass-instance*
+    #:wndclass-icon*
+    #:wndclass-cursor*
+    #:wndclass-background*
+    #:wndclass-menu-name
+    #:wndclass-class-name*
+    #:wndclass-small-icon
+    #:system-color
+    #:color-3d-dk-shadow
+    #:color-3d-face
+    #:color-3d-highlight
+    #:color-3d-hilight
+    #:color-3d-light
+    #:color-3d-shadow
+    #:color-active-border
+    #:color-active-caption
+    #:color-app-workspace
+    #:color-background
+    #:color-btn-face
+    #:color-btn-highlight
+    #:color-btn-hilight
+    #:color-btn-shadow
+    #:color-btn-text
+    #:color-caption-text
+    #:color-desktop
+    #:color-gradient-active-caption
+    #:color-gradient-inactive-caption
+    #:color-gray-text
+    #:color-highlight
+    #:color-highlight-text
+    #:color-hotlight
+    #:color-inactive-border
+    #:color-inactive-caption
+    #:color-inactive-caption-text
+    #:color-info-bk
+    #:color-info-text
+    #:color-menu
+    #:color-menu-hilight
+    #:color-menu-bar
+    #:color-menu-text
+    #:color-scrollbar
+    #:color-window
+    #:color-window-frame
+    #:color-window-text
+    #:class-info
+    #:class-info*
+    #:class-long
+    #:class-long-ptr
+    #:window-class-name
+    #:class-word
+    #:window-long
+    #:window-long-ptr
+    #:register-class
+    #:register-class*
+    #:unregister-class
+    
+    ;;windows
+    #:dispatch-message
+    #:get-message
+    #:post-quit-message
+    
+    
+    ))
+
+#|
 (defpackage #:doors.nls
   (:use #:cl #:alexandria #:virgil #:doors)
   (:export
@@ -237,3 +337,4 @@
     #:locale-neutral
     #:locale-invariant
     ))
+|#

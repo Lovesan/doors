@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -105,72 +105,88 @@
   #+doors.unicode 'wchar
   #-doors.unicode 'char)
 
+(declaim (inline make-word))
+(defun make-word (low high)
+  (declare (type integer low high))
+  (logior (logand low #xFF)
+          (ash (logand high #xFF) 8)))
 
 (declaim (inline make-short))
-(defun make-short (a b)
-  (lognot (logand #xFFFF
-                  (lognot
-                    (logior (logand a #xFF)
-                            (ash (logand b #xFF) 8))))))
-
-(declaim (inline make-word))
-(defun make-word (a b)
-  (logior (logand a #xFF)
-          (ash (logand b #xFF) 8)))
-
-(declaim (inline make-long))
-(defun make-long (a b)
-  (lognot (logand #xFFFFFFFF
-                  (lognot
-                    (logior (logand a #xFFFF)
-                            (ash (logand b #xFFFF) 16))))))
+(defun make-short (low high)
+  (declare (type integer low high))
+  (let ((u (make-word low high)))
+    (declare (type word u))
+    (the int16
+         (if (logbitp 15 u)
+           (lognot (logand #xFFFF (lognot u)))
+           u))))
 
 (declaim (inline make-dword))
-(defun make-dword (a b)
+(defun make-dword (low high)
+  (declare (type integer low high))
   (logand #xFFFFFFFF
-          (logior (logand a #xFFFF)
-                  (ash (logand b #xFFFF) 16))))
+          (logior (logand low #xFFFF)
+                  (ash (logand high #xFFFF) 16))))
 
-(declaim (inline make-long-long))
-(defun make-long-long (a b)
-  (lognot (logand #xFFFFFFFFFFFFFFFF
-                  (lognot
-                    (logior (logand a #xFFFFFFFF)
-                            (ash (logand b #xFFFFFFFF) 32))))))
+(declaim (inline make-long))
+(defun make-long (low high)
+  (declare (type integer low high))
+  (let ((u (make-dword low high)))
+    (declare (type dword u))
+    (the int32
+         (if (logbitp 31 u)
+           (lognot (logand #xFFFFFFFF (lognot u)))
+           u))))
 
 (declaim (inline make-qword))
-(defun make-qword (a b)
+(defun make-qword (low high)
+  (declare (type integer low high))
   (logand #xFFFFFFFFFFFFFFFF
-          (logior (logand a #xFFFFFFFF)
-                  (ash (logand b #xFFFFFFFF) 32))))
+          (logior (logand low #xFFFFFFFF)
+                  (ash (logand high #xFFFFFFFF) 32))))
+
+(declaim (inline make-long-long))
+(defun make-long-long (low high)
+  (declare (type integer low high))
+  (let ((u (make-qword low high)))
+    (declare (type qword u))
+    (the int64
+         (if (logbitp 63 u)
+           (lognot (logand #xFFFFFFFFFFFFFFFF (lognot u)))
+           u))))
 
 (declaim (inline low-dword))
 (defun low-dword (x)
+  (declare (type integer x))
   (logand x #xFFFFFFFF))
 
 (declaim (inline high-dword))
 (defun high-dword (x)
+  (declare (type integer x))
   (logand (ash x -32) #xFFFFFFFF))
 
 (declaim (inline low-word))
 (defun low-word (x)
+  (declare (type integer x))
   (logand x #xFFFF))
 
 (declaim (inline high-word))
 (defun high-word (x)
+  (declare (type integer x))
   (logand (ash x -16) #xFFFF))
 
 (declaim (inline low-byte))
 (defun low-byte (x)
+  (declare (type integer x))
   (logand x #xFF))
 
 (declaim (inline high-byte))
 (defun high-byte (x)
+  (declare (type integer x))
   (logand (ash x -8) #xFF))
 
 (defconstant unicode-string-max-bytes 65534)
 (defconstant unicode-string-max-chars 32767)
-
 
 (define-translatable-type pascal-string-type ()
   ()

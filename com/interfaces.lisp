@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,9 +25,7 @@
 (in-package #:doors.com)
 
 (define-interface class-factory
-    ((iid-class-factory
-       #x00000001 #x0000 #x0000
-       #xC0 #x00 #x00 #x00 #x00 #x00 #x00 #x46)
+    ((iid-class-factory "{00000001-0000-0000-C000-000000000046}")
      unknown)
   "Enables a class of objects to be created."
   (create-instance

@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -200,7 +200,13 @@
   (:debug-process #x00000001)
   (:detached-process #x00000008)
   (:extended-startup-info-present #x00080000)
-  (:inherit-parent-affinity #x00010000))
+  (:inherit-parent-affinity #x00010000)
+  (:above-normal-priority-class #x00008000)
+  (:below-normal-priority-class #x00004000)
+  (:high-priority-class #x00000080)
+  (:idle-priority-class #x00000040)
+  (:normal-priority-class #x00000020)
+  (:realtime-priority-class #x00000100))
 
 (define-external-function
     (#+doors.unicode "CreateProcessW"
@@ -210,16 +216,13 @@
   ((last-error bool) rv process-information)
   "Creates a new process and its primary thread. The new process runs in the security context of the calling process."
   (application-name (& tstring :in t))
-  #-doors.unicode
-  (command-line (& astring :in t) :key void)
-  #+doors.unicode
-  (command-line pointer :key)
+  (command-line (& tstring :in t) :key)
   (process-attributes (& doors.security:security-attributes :in t)
                       :key void)
   (thread-attributes (& doors.security:security-attributes :in t)
                      :key void)
-  (inherit-handles boolean)
-  (creation-flags process-creation-flags)
+  (inherit-handles boolean :key)
+  (flags process-creation-flags :key)
   (environment pointer :key)
   (current-directory (& tstring :in t) :key)
   (startup-info (& (union ()
@@ -237,16 +240,13 @@
   "Creates a new process and its primary thread. The new process runs in the security context of the user represented by the specified token."
   (token handle :key)
   (application-name (& tstring :in t))
-  #-doors.unicode
-  (command-line (& astring :in t) :key void)
-  #+doors.unicode
-  (command-line pointer :key)
+  (command-line (& tstring :in t) :key)
   (process-attributes (& doors.security:security-attributes :in t)
                       :key void)
   (thread-attributes (& doors.security:security-attributes :in t)
                      :key void)
-  (inherit-handles boolean)
-  (creation-flags process-creation-flags)
+  (inherit-handles boolean :key)
+  (flags process-creation-flags :key)
   (environment pointer :key)
   (current-directory (& tstring :in t) :key)
   (startup-info (& (union ()
@@ -268,8 +268,8 @@
                  (:with-profile #x00000001)
                  (:net-credentials-only #x00000002)))
   (application-name (& wstring))
-  (command-line pointer :key)
-  (creation-flags process-creation-flags)
+  (command-line (& wstring :in t) :key)
+  (flags process-creation-flags :key)
   (environment pointer :key)
   (current-directory (& wstring :in t) :key)
   (startup-info (& (union ()
@@ -290,8 +290,8 @@
                  (:with-profile #x00000001)
                  (:net-credentials-only #x00000002)))
   (application-name (& wstring))
-  (command-line pointer :key)
-  (creation-flags process-creation-flags)
+  (command-line (& tstring :in t) :key)
+  (flags process-creation-flags :key)
   (environment pointer :key)
   (current-directory (& wstring :in t) :key)
   (startup-info (& (union ()
@@ -794,4 +794,4 @@
   ((last-error bool))
   "Terminates the specified process and all of its threads."
   (process handle :optional current-process)
-  (exit-code uint))
+  (exit-code uint :optional 0))

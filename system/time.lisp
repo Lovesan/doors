@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -364,3 +364,21 @@
   (time-zone-info (& time-zone-information :in t) :optional void)
   (local-time (& file-time))
   (universal-time (& system-time :out) :aux))
+
+(define-external-function
+    ("QueryPerformanceCounter" performance-counter)
+    (:stdcall kernel32)
+  ((last-error bool) rv counter)
+  "Retrieves the current value of the high-resolution performance counter."
+  (counter (& int64 :out) :aux))
+
+(define-symbol-macro performance-counter (performance-counter))
+
+(define-external-function
+    ("QueryPerformanceFrequency" performance-frequency)
+    (:stdcall kernel32)
+  ((last-error bool) rv freq)
+  "Retrieves the frequency of the high-resolution performance counter, if one exists. The frequency cannot change while the system is running."
+  (freq (& int64 :out) :aux))
+
+(define-symbol-macro performance-frequency (performance-frequency))

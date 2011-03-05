@@ -22,28 +22,35 @@
 ;;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;;; DEALINGS IN THE SOFTWARE
 
-(in-package #:doors.com)
+(in-package #:doors.ui)
 
-(define-results com-error (windows-error)
-  ()
-  ((not-implemented #x80004001
-     "Not implemented")
-   (no-interface #x80004002
-     "No such interface supported")
-   (invalid-pointer #x80004003
-     "Invalid pointer")
-   (abort #x80004004
-     "Operation aborted")
-   (failure #x80004005
-     "Unspecified error")
-   (data-pending #x8000000A
-     "The data necessary to complete this operation is not yet available")
-   (class-not-available #x8040111
-     "ClassFactory cannot supply requested class")
-   (class-not-registered #x80040154
-     "Class not registered"))
-  (:conc-name error-))
+(define-enum (keystroke-flag
+               (:base-type dword)
+               (:conc-name kf-))
+  (:extended  #x0100)
+  (:dlg-mode  #x0800)
+  (:menu-mode #x1000)
+  (:alt-down  #x2000)
+  (:repeat    #x4000)
+  (:up        #x8000))
 
-(defun com-error-code (error)
-  (declare (type com-error error))
-  (slot-value error 'code))
+(declaim (inline key-repeat-count))
+(defun key-repeat-count (lparam)
+  (declare (type lparam lparam))
+  (ldb (byte 16 0) lparam))
+
+(declaim (inline key-scan-code))
+(defun key-scan-code (lparam)
+  (declare (type lparam lparam))
+  (ldb (byte 8 16) lparam))
+
+(declaim (inline key-flags))
+(defun key-flags (lparam)
+  (declare (type lparam lparam))
+  (translate (ldb (byte 16 16) lparam) 'keystroke-flag))
+
+(define-enum (hit-test-code
+               (:base-type uint)
+               (:conc-name ht))
+  (:foo 1))
+

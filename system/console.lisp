@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -76,36 +76,51 @@
   (size dword)
   (visible bool))
 
-(declaim (inline coord coord-x coord-y (setf coord-x) (setf coord-y)))
-(define-struct (coord
-                 (:constructor coord (x y)))
+(declaim (inline make-coord coord
+                 copy-coord coord-p
+                 coord-x coord-y
+                 (setf coord-x) (setf coord-y)))
+(defstruct (coord
+             (:constructor make-coord)
+             (:constructor coord (x y)))
     "Defines the coordinates of a character cell in a console screen buffer. "
-  (x short)
-  (y short))
+  (x 0 :type short)
+  (y 0 :type short))
 
-(declaim (inline coord-to-dword))
-(defun coord-to-dword (coord)
-  (declare (type coord coord))
-  (logior (logand #xFFFF (coord-x coord))
-          (ash (logand #xFFFF (coord-y coord)) 16)))
-
-(declaim (inline coord-from-dword))
-(defun coord-from-dword (dword)
-  (declare (type dword dword))
-  (coord (let ((x (ldb (byte 16 0) dword)))
-           (if (> x 32767)             
-             (lognot (logand #xFFFF (lognot x)))
-             x))
-         (let ((x (ldb (byte 16 16) dword)))
-           (if (> x 32767)             
-             (lognot (logand #xFFFF (lognot x)))
-             x))))
+(define-immediate-type coord-type ()
+  ()
+  (:base-type dword)
+  (:lisp-type (type) 'coord)
+  (:simple-parser coord)
+  (:prototype (type) (coord 0 0))
+  (:prototype-expansion (type) `(coord 0 0))
+  (:translator (value type)
+    (coord (make-short (ldb (byte 8 0) value)
+                       (ldb (byte 8 8) value))
+           (make-short (ldb (byte 8 16) value)
+                       (ldb (byte 8 24) value))))
+  (:translator-expansion (value type)
+    (once-only ((value `(the dword ,value)))
+      `(coord (make-short (ldb (byte 8 0) ,value)
+                          (ldb (byte 8 8) ,value))
+              (make-short (ldb (byte 8 16) ,value)
+                          (ldb (byte 8 24) ,value)))))
+  (:converter (coord type)
+    (make-dword (coord-x coord) (coord-y coord)))
+  (:converter-expansion (coord type)
+    (once-only ((coord `(the coord ,coord)))
+      `(make-dword (coord-x ,coord) (coord-y ,coord))))
+  (:allocator-expansion (value type)
+    `(alloc 'dword))
+  (:deallocator-expansion (pointer type)
+    `(free ,pointer))
+  (:cleaner-expansion (pointer value type)
+    ()))
 
 (define-struct (console-font-info (:conc-name console-fi-))
     "Contains information for a console font."
   (font dword)
   (font-size coord))
-
 
 (define-struct (console-font-info*                 
                  (:conc-name console-fi-))
@@ -352,7 +367,7 @@
   (console-output handle :optional (std-handle :output-handle))
   (attribute char-attributes)
   (length dword)
-  (write-coord dword)
+  (write-coord coord)
   (number-of-attrs-written (& dword :out) :aux))
 
 (define-external-function
@@ -365,7 +380,7 @@
   (console-output handle :optional (std-handle :output-handle))
   (character tchar)
   (length dword)
-  (write-coord dword)
+  (write-coord coord)
   (chars-written (& dword :out) :aux))
 
 (define-external-function
@@ -485,8 +500,7 @@
 (define-external-function
     ("GetConsoleFontSize" console-font-size)
     (:stdcall kernel32)
-  ((last-error dword not-zero) rv
-   (coord-from-dword rv))
+  ((last-error dword not-zero) rv (translate rv 'coord))
   "Retrieves the size of the font used by the specified console screen buffer."
   (console-output handle :optional (std-handle :output-handle))
   (font dword :optional))
@@ -657,7 +671,7 @@
     (:stdcall kernel32)
   (dword rv (if (zerop rv)
               (invoke-last-error)
-              (coord-from-dword rv)))
+              (translate rv 'coord)))
   "Retrieves the size of the largest possible console window, based on the current font and the size of the display."
   (console-output handle :optional (std-handle :output-handle)))
 
@@ -733,10 +747,9 @@
   "Reads character and color attribute data from a rectangular block of character cells in a console screen buffer, and the function writes the data to a rectangular block at a specified location in the destination buffer."
   (console-output handle :optional (std-handle :output-handle))
   (buffer (& (array char-info) :out))
-  (buffer-size-coord dword :optional (coord-to-dword
-                                       (coord (array-dimension buffer 1)
-                                              (array-dimension buffer 0))))
-  (buffer-coord dword)
+  (buffer-size-coord coord :optional (coord (array-dimension buffer 1)
+                                            (array-dimension buffer 0)))
+  (buffer-coord coord)
   (region (& small-rect :inout)))
 
 (define-external-function
@@ -747,7 +760,7 @@
   (console-output handle :optional (std-handle :output-handle))
   (attrs (& (array char-attributes) :out))
   (length dword :optional (array-total-size attrs))
-  (read-coord dword)
+  (read-coord coord)
   (n (& dword :out) :aux))
 
 (define-external-function
@@ -760,7 +773,7 @@
   (console-output handle :optional (std-handle :output-handle))
   (buffer (& tstring :out))
   (length dword :optional (length buffer))
-  (read-coord dword)
+  (read-coord coord)
   (n (& dword :out) :aux))
 
 (define-external-function
@@ -773,7 +786,7 @@
   (console-output handle :optional (std-handle :output-handle))
   (scroll-rectangle (& small-rect))
   (clip-rectangle (& small-rect :in t) :optional void)
-  (destination-origin dword)
+  (destination-origin coord)
   (fill (& char-info)))
 
 (define-external-function
@@ -829,10 +842,10 @@
 (define-external-function
     ("SetConsoleCursorPosition" (setf console-cursor-position))
     (:stdcall kernel32)
-  ((last-error bool) rv (coord-from-dword coord))
+  ((last-error bool) rv coord)
   "Sets the cursor position in the specified console screen buffer."
   (console-output handle :optional (std-handle :output-handle))
-  (coord dword))
+  (coord coord))
 
 (define-symbol-macro console-cursor-position (console-cursor-position))
 
@@ -865,10 +878,10 @@
 (define-external-function
     ("SetConsoleScreenBufferSize" (setf console-screen-buffer-size))
     (:stdcall kernel32)
-  ((last-error bool) rv (coord-from-dword size-coord))
+  ((last-error bool) rv size-coord)
   "Changes the size of the specified console screen buffer."
   (console-output handle :optional (std-handle :output-handle))
-  (size-coord dword))
+  (size-coord coord))
 
 (define-symbol-macro console-screen-buffer-size
     (console-screen-buffer-size))
@@ -955,10 +968,9 @@
   "Writes character and color attribute data to a specified rectangular block of character cells in a console screen buffer. T"
   (console-output handle :optional (std-handle :output-handle))
   (buffer (& (array char-info)))
-  (buffer-size-coord dword :optional (coord-to-dword
-                                       (coord (array-dimension buffer 1)
-                                              (array-dimension buffer 0))))
-  (buffer-coord dword :optional 0)
+  (buffer-size-coord coord :optional (coord (array-dimension buffer 1)
+                                            (array-dimension buffer 0)))
+  (buffer-coord coord :optional (coord 0 0))
   (region (& small-rect :inout)))
 
 (define-external-function
@@ -969,7 +981,7 @@
   (console-output handle :optional (std-handle :output-handle))
   (attributes (& (array char-attributes)))
   (length dword :optional (array-total-size attributes))
-  (write-coord dword)
+  (write-coord coord)
   (n (& dword :out) :aux))
 
 (define-external-function
@@ -982,5 +994,5 @@
   (console-output handle :optional (std-handle :output-handle))
   (characters (& tstring))
   (length dword :optional (length characters))
-  (write-coord dword)
+  (write-coord coord)
   (n (& dword :out) :aux))

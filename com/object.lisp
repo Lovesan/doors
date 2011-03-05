@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -31,11 +31,15 @@
 
 (closer-mop:defclass com-object ()
   ((ref-count :initform 0 :accessor com-object-ref-count)
-   (interface-pointers :initform (make-hash-table :test #'eq)
-                       :reader com-object-interface-pointers))
+   (interface-pointers :initform (make-hash-table :test #'eq)))
   (:documentation
     "All lisp-side COM object classes must inherit from this class."))
-  
+
+(declaim (inline com-object-interface-pointers))
+(defun com-object-interface-pointers (object)
+  (declare (type com-object object))
+  (slot-value object 'interface-pointers))
+ 
 (closer-mop:defclass com-class (com-object standard-class)
   ((%clsid :initform nil :initarg :clsid)
    (%interfaces :initarg :interfaces :initform '())))
@@ -121,6 +125,7 @@
   (declare (type com-object object)
            (type iid class))
   "Acquires specified interface wrapper for an object."
+  (%ensure-mta-post-mortem-thread)
   (unless (typep class 'com-interface-class)
     (setf class (find-interface-class class)))
   (unless (let ((object-class (class-of object)))
@@ -234,3 +239,52 @@
                              lisp-value
                              (com-interface-type-name type)))
                   (funcall 'release lisp-value)))))
+
+(defun reinitialize-vtables ()  
+  (%ensure-mta-post-mortem-thread)
+  (setf *registered-interfaces*
+        (delete nil *registered-interfaces*
+                :key #'weak-pointer-value))
+  (let ((interfaces (nreverse (mapcar #'weak-pointer-value *registered-interfaces*))))
+    (dolist (interface interfaces)
+      (let ((vtbl (com-interface-class-vtable-name interface)))
+        (setf (symbol-value vtbl) (alloc vtbl)))))
+  (let ((interfaces (make-hash-table :test #'eq))
+        (interfaces-to-remove '())
+        (objects '()))
+    (maphash (lambda (k v)
+               (declare (ignore k))
+               (pushnew v objects))
+      *pointer-to-object-mapping*)
+    (maphash (lambda (k interface &aux (address (car k)) (class (cdr k)))
+               (declare (ignore class))
+               (let ((object (gethash address *pointer-to-object-mapping*)))
+                 (if object
+                   (pushnew interface (gethash object interfaces))
+                   (push interface interfaces-to-remove))))
+      *pointer-to-interface-mapping*)
+    (clrhash *pointer-to-interface-mapping*)
+    (clrhash *pointer-to-object-mapping*)
+    (dolist (interface interfaces-to-remove)
+      (setf (slot-value interface 'com-pointer) &0))
+    (dolist (object objects)
+      (let ((classes '()))
+        (maphash (lambda (k v)
+                   (declare (ignore v))
+                   (pushnew k classes))
+          (com-object-interface-pointers object))
+        (dolist (class classes)
+          (let* ((vtable (symbol-value (com-interface-class-vtable-name class)))                 
+                 (pointer (alloc '* vtable))
+                 (interface (find-if (lambda (interface)
+                                       (eq class (class-of interface)))
+                                     (gethash object interfaces))))
+            (when interface
+              (setf (slot-value interface 'com-pointer) pointer)
+              (setf (gethash (cons (&& pointer) class) *pointer-to-interface-mapping*)
+                    interface))
+            (setf (gethash (&& pointer) *pointer-to-object-mapping*)
+                  object
+                  (gethash class (com-object-interface-pointers object))
+                  pointer))))))
+  (values))

@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,11 +25,11 @@
 (in-package #:cl-user)
 
 (defpackage #:doors.com.examples
-  (:use #:cl #:trivial-garbage #:alexandria #:virgil #:doors #:doors.com)
+  (:use #:cl #:trivial-garbage #:alexandria #:virgil #:doors #:doors.com #:doors.ui)
   (:nicknames #:com.examples)
   (:export
     #:hello-world
-    #:iid-hello-world
     #:hello-world-object
     #:hello-world-wrapper
-    #:register-server))
+    #:register-server
+    #:run-server))

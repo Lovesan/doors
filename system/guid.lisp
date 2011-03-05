@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -131,7 +131,6 @@
 (deftype uuid () 'guid)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defvar *guid-constants* (make-hash-table :test #'equalp))
   (defmethod make-load-form ((object guid) &optional env)
     (declare (ignore env))
     (with-guid-accessors (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8)
@@ -140,7 +139,7 @@
          (guid ,dw ,w1 ,w2 ,b1 ,b2 ,b3 ,b4 ,b5 ,b6 ,b7 ,b8)
          t))))
 
-(defmacro define-guid (name dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8)
+(defmacro %define-guid (name dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8)
   (check-type name symbol)
   (check-type dw dword)
   (check-type w1 word)
@@ -159,6 +158,24 @@
                               t)
        :test #'equalp)
      ',name))
+
+(defmacro define-guid (name &rest values)
+  (check-type name symbol)
+  (cond
+    ((stringp (first values))
+     (assert (null (rest values)) (values))
+     (with-guid-accessors
+         (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8)
+         (external-function-call
+           "CLSIDFromString"
+           ((:stdcall ole32)
+            (hresult rv guid)
+            ((& wstring))
+            ((& guid :out) guid :aux))
+           (car values))
+       `(%define-guid ,name ,dw ,w1 ,w2 ,b1 ,b2 ,b3 ,b4 ,b5 ,b6 ,b7 ,b8)))
+    (T (assert (= 11 (length values)) (values))
+       `(%define-guid ,name ,@values))))
 
 (define-guid uuid-null  0 0 0 0 0 0 0 0 0 0 0)
 

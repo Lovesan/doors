@@ -1,0 +1,28 @@
+[
+    uuid(6070E712-55CC-4434-849E-36C7C6987ACC),
+    helpstring("HELLO-WORLD-OBJECT Type Library"),
+    version(1.0)
+]
+library DoorsHelloWorld
+{
+    importlib("stdole32.tlb");
+
+    [
+        uuid(F9210244-38D1-49C0-A848-684EDD3DBFF0), // IID_HelloWorld
+        oleautomation,
+        object
+    ]
+    interface IHelloWorld : IUnknown
+    {
+        HRESULT HelloWorld([in] LPWSTR message);
+    }
+
+    [
+        uuid(DF748DA7-BCB9-4F67-8D32-F9AA1AAA3ABF), // CLSID_HelloWorld
+        appobject
+    ]
+    coclass HelloWorld
+    {
+        [default] interface IHelloWorld;
+    }
+}

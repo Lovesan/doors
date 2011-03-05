@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -25,32 +25,25 @@
 (in-package #:doors.com.examples)
 
 (closer-mop:defclass factory-class (com-class)
-  ((locked :initform nil))
+  ((server-atom :initform nil))
   (:interfaces class-factory)
   (:metaclass com-class))
 
 (closer-mop:defmethod create-instance ((class factory-class) iid &optional outer)
   (if outer
     (error 'com-error :code error-not-implemented)
-    (values nil outer iid (acquire-interface (make-instance class) iid))))
+    (let ((object (make-instance class)))
+      (values nil outer iid (acquire-interface object iid)))))
 
 (closer-mop:defmethod lock-server ((class factory-class) lock)
   (if lock
-    (if (slot-value class 'locked)
-      (warn 'windows-status :code status-false)
-      (progn (add-ref class)
-             (setf (slot-value class 'locked) t)))
-    (if (slot-value class 'locked)
-      (progn (release class)
-             (setf (slot-value class 'locked) nil))
-      (warn 'windows-status :code status-false)))
+    (add-ref-server-process)
+    (when (zerop (release-server-process))
+      (post-quit-message)))
   (values nil lock))
 
 (define-interface hello-world
-    ((iid-hello-world
-       #xF9210244 #x38D1 #x49C0
-       #xA8 #x48 #x68 #x4E #xDD #x3D #xBF #xF0)
-     unknown)
+    ("{F9210244-38D1-49C0-A848-684EDD3DBFF0}" unknown)
   (hello-world (hresult)
       (string (& wstring) :optional "Hello, world!")))
 
@@ -65,16 +58,37 @@
   (write-line string)
   (values nil string))
 
+(defmethod add-ref :after ((object hello-world-object))
+  (add-ref-server-process))
+
+(defmethod release :after ((object hello-world-object))
+  (when (zerop (release-server-process))
+    (post-quit-message)))
+
 (defun register-server ()
-  (handler-bind
-    ((windows-status #'muffle-warning))
-    (initialize-com))
-  (register-class-object (find-class 'hello-world-object)
-                         :server
-                         :multiple-use))
+  (let ((class (find-class 'hello-world-object)))
+    (when (slot-value class 'server-atom)
+      (ignore-errors
+        (revoke-class-object (slot-value class 'server-atom))))
+    (setf (slot-value class 'server-atom)
+          (progn
+            (handler-bind
+              ((windows-status (lambda (c)
+                                 (uninitialize-com)
+                                 (muffle-warning c))))
+              (initialize-com* :multithreaded))
+            (register-class-object class '(:inproc-server :local-server))))))
 
 (closer-mop:defclass hello-world-wrapper (com-wrapper)
   ()
   (:metaclass com-wrapper-class)
   (:interfaces hello-world)
   (:clsid . "{DF748DA7-BCB9-4F67-8D32-F9AA1AAA3ABF}"))
+
+(defun run-server ()
+  (initialize-com)
+  (loop :with atom = (register-class-object 'hello-world-object :local-server)
+    :for msg = (get-message) :until (null msg)
+    :do (dispatch-message msg)
+    :finally (revoke-class-object atom))
+  (uninitialize-com))

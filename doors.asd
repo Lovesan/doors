@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -28,7 +28,7 @@
   :author "Dmitry Ignatiev <lovesan.ru@gmail.com>"
   :maintainer "Dmitry Ignatiev <lovesan.ru@gmail.com>"
   :licence "MIT"
-  :depends-on (#:trivial-features #:alexandria #:virgil #:trivial-garbage #:closer-mop)
+  :depends-on (#:trivial-features #:alexandria #:virgil #:trivial-garbage #:closer-mop #:bordeaux-threads)
   :serial t
   :components ((:module "system"
                         :serial t
@@ -68,6 +68,7 @@
                                      (:file "memory")
                                      (:file "processes")
                                      (:file "psapi")
+                                     (:file "threads")
                                      ))
                (:module "com-aux"
                         :pathname "com"
@@ -77,6 +78,22 @@
                                      (:file "interfaces")
                                      (:file "functions")
                                      (:file "wrapper")))
-                        ))
+                        
+               (:module "gdi"
+                        :serial t
+                        :components ((:file "package")
+                                     (:file "rectangles")
+                                     (:file "bitmaps")
+                                     ))
+               (:module "ui"
+                        :serial t
+                        :components ((:file "packages")
+                                     (:file "window-classes")
+                                     (:file "windows")
+                                     (:file "input")
+                                     (:file "windows-aux")
+                                     (:file "configuration")
+                                     ))
+               ))
 
 ;; vim: ft=lisp et

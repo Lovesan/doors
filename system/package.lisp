@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -31,11 +31,13 @@
     #:ntdll
     #:kernel32
     #:user32
+    #:comctl32
     #:gdi32
     #:ws2-32
     #:advapi32
     #:psapi
     #:ole32
+    #:oleaut32
     #:secur32
       
     ;;windows types
@@ -154,6 +156,7 @@
     #:error-unexpected-failure
     #:error-invalid-info-class
     #:error-out-of-memory
+    #:error-not-enough-memory
     #:error-invalid-arg
     #:error-invalid-handle
     #:error-bad-length
@@ -321,6 +324,8 @@
     #:system-time-to-file-time
     #:system-time-to-tz-specific-local-time
     #:tz-specific-local-time-to-system-time
+    #:performance-counter
+    #:performance-frequency
     
     ;;system information stuff
     #:dock-info
@@ -494,10 +499,11 @@
     #:console-cursor-size
     #:console-cursor-visible
     #:coord
+    #:make-coord
+    #:copy-coord
+    #:coord-p
     #:coord-x
     #:coord-y
-    #:coord-to-dword
-    #:coord-from-dword
     #:console-font-info
     #:make-console-font-info
     #:console-fi-font
@@ -679,7 +685,7 @@
     #:load-params-cmd-show
     #:load-module
     
-    ;;processes, processors, threads and thread pools
+    ;;processes
     #:processor-cache-type
     #:cache-unified
     #:cache-instruction
@@ -814,6 +820,9 @@
     #:process-affinity-update-mode
     #:process-cycle-time
     #:terminate-process
+    
+    ;;Threads
+    #:current-thread-id
     
     ;;PSAPI stuff
     #:page-file-information

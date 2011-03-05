@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -223,27 +223,65 @@
 
 (defun make-iid-association-form (name iid-name)
   (etypecase iid-name
-    (null nil nil)
+    (guid `(setf (gethash (setf (slot-value (find-class ',name) '%iid) ,iid-name)
+                          *iid-to-interface-class-mapping*)
+                 (find-class ',name)))
+    (string `(setf (gethash (setf (slot-value (find-class ',name) '%iid)
+                                  (external-function-call
+                                    "IIDFromString"
+                                    ((:stdcall ole32)
+                                     (hresult rv iid)
+                                     ((& wstring))
+                                     ((& guid :out) iid :aux))
+                                    ,iid-name))
+                            *iid-to-interface-class-mapping*)
+                   (find-class ',name)))
     (symbol (assert (typep (symbol-value iid-name) 'guid) ())
-            (values `(eval-when (:compile-toplevel :load-toplevel :execute)
-                       (setf (gethash ,iid-name *iid-to-interface-class-mapping*)
-                             (find-class ',name)))
-                    iid-name))
-    (cons (destructuring-bind
-              (iid-name dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8) iid-name
-            (values `(eval-when (:compile-toplevel :load-toplevel :execute)
-                       (define-guid ,iid-name ,dw ,w1 ,w2
-                         ,b1 ,b2 ,b3 ,b4 ,b5 ,b6 ,b7 ,b8)
-                       (setf (gethash ,iid-name *iid-to-interface-class-mapping*)
-                             (find-class ',name)))
-                    iid-name)))))
+            `(progn (setf (gethash ,iid-name *iid-to-interface-class-mapping*)
+                          (find-class ',name))
+                    (setf (slot-value (find-class ',name) '%iid) ,iid-name)))
+    (cons (if (stringp (second iid-name))
+            (progn
+              (assert (and (symbolp (car iid-name))
+                           (= 2 (length iid-name))))
+              (let ((iid (external-function-call
+                           "IIDFromString"
+                           ((:stdcall ole32)
+                            (hresult rv iid)
+                            ((& wstring))
+                            ((& guid :out) iid :aux))
+                           (second iid-name))))
+                (with-guid-accessors (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8) iid                  
+                  (make-iid-association-form
+                      name (list (car iid-name) dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8)))))
+            (destructuring-bind
+                (iid-name dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8) iid-name
+              `(progn (define-guid ,iid-name ,dw ,w1 ,w2
+                        ,b1 ,b2 ,b3 ,b4 ,b5 ,b6 ,b7 ,b8)
+                      (setf (gethash ,iid-name *iid-to-interface-class-mapping*)
+                            (find-class ',name))
+                      (setf (slot-value (find-class ',name) '%iid) ,iid-name)))))))
 
 (defmacro define-interface (name-and-options
                              (&optional iid parent-name)
                              &rest doc-and-methods)
   (check-type parent-name symbol)
   (check-type name-and-options (or symbol cons))
-  (check-type iid (or symbol cons))
+  (check-type iid (or symbol cons string))
+  (when (null iid)
+    (setf iid (external-function-call
+                "StringFromGUID2"
+                ((:stdcall ole32)
+                 ((last-error int doors::not-zero) rv buffer)
+                 ((& guid))
+                 ((& (~ wchar nil simple-string) :out)
+                  buffer :aux (make-string 38 :initial-element #\space))
+                 (int c :aux 39))
+                (external-function-call
+                  "CoCreateGuid"
+                  ((:stdcall ole32)
+                   (hresult rv guid)
+                   ((& guid :out) guid :aux))))))
   (destructuring-bind
       (name &key (vtable-name (make-internal-name
                                 (package-name *package*)
@@ -272,8 +310,7 @@
                                  (com-interface-class-vtable-name parent))))
       `(progn
          (eval-when (:compile-toplevel :load-toplevel :execute)
-           ,@(multiple-value-bind
-                (form iid-name) (make-iid-association-form name iid)
+           ,@(let ((form (make-iid-association-form name iid)))
               `((closer-mop:defclass ,name (,(or parent-name 'com-interface))
                   ()
                   (:metaclass com-interface-class)
@@ -281,26 +318,37 @@
                   (:methods ,@parent-methods ,@direct-methods)
                   ,@(when doc `((:documentation ,doc))))
                 (closer-mop:finalize-inheritance (find-class ',name))
+                (loop :with this = (find-class ',name)
+                  :with prev = nil
+                  :for class :being :the :hash-values :of *iid-to-interface-class-mapping*
+                  :using (:hash-key guid)
+                  :when (eq prev this) :do (setf prev guid) (loop-finish)
+                  :finally (when prev (remhash guid *iid-to-interface-class-mapping*)))
                 ,form
-                (setf (slot-value (find-class ',name) '%iid) ,iid-name)
+                (pushnew (make-weak-pointer (find-class ',name))
+                         *registered-interfaces*
+                         :key #'weak-pointer-value
+                         :test #'eq)
                 (define-type-parser ,name (&optional add-ref)
                   (make-instance 'com-interface-type
                     :name ',name
                     :add-ref add-ref)))))
-         ,@(let ((methods (append parent-methods direct-methods)))
-            `((define-struct (,vtable-name
-                               ,@(when parent-vtable-name
-                                   `((:include ,parent-vtable-name)))
-                               (:constructor ,vtable-name ,methods))
-                 ,@(mapcar (lambda (x) (list x 'pointer)) direct-methods))
-              (defvar ,vtable-name (alloc ',vtable-name))
-              ,@(when parent
-                 `((setf (deref ,vtable-name
-                                ',parent-vtable-name)
-                         (deref ,parent-vtable-name
-                                ',parent-vtable-name))))))
-       ,@(loop :for method-spec :in methods :collect
-           `(define-interface-method ,name ,@method-spec))
+         (defvar ,vtable-name (raw-alloc ,(* (+ (length parent-methods)
+                                                (length direct-methods))
+                                             (sizeof 'pointer))))
+         ,@(loop :for method-spec :in methods :collect
+             `(define-interface-method ,name ,@method-spec))
+         (define-struct (,vtable-name
+                          ,@(when parent-vtable-name `((:include ,parent-vtable-name)))
+                          (:constructor ,vtable-name))
+             ,@(mapcar (lambda (x) `(,x pointer :initform (get-callback
+                                                            ',(make-internal-name
+                                                                (package-name *package*)
+                                                                name
+                                                                x
+                                                                'trampoline))))
+                 direct-methods))
+         (setf (deref ,vtable-name ',vtable-name) (,vtable-name))
        ',name))))
 
 (defmacro define-interface-method

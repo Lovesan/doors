@@ -158,7 +158,6 @@
   (:GERMAN-LIECHTENSTEIN     #x05)    ;; German (Liechtenstein)
   (:ITALIAN                  #x01)    ;; Italian
   (:ITALIAN-SWISS            #x02)    ;; Italian (Swiss)
-#-win2000
   (:KASHMIRI-SASIA           #x02)    ;; Kashmiri (South Asia)
   (:KASHMIRI-INDIA           #x02)    ;; For app compatibility only
   (:KOREAN                   #x01)    ;; Korean (Extended Wansung)
@@ -215,66 +214,3 @@
   (:hungarian-technical 1)
   (:georgian-traditional 0)
   (:georgian-modern 1))
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-(declaim (inline make-lang-id))
-(defun make-lang-id (primary sublang)
-  (logior (ash (logand #xFFFF (convert sublang 'sublang))
-               10)
-          (logand #xFFFF (convert primary 'lang))))
-
-(declaim (inline primary-lang-id))
-(defun primary-lang-id (lang-id)
-  (translate (logand lang-id #x3FF) 'lang))
-
-(declaim (inline sublang-id))
-(defun sublang-id (lang-id)
-  (translate (ash (logand lang-id #xFFFF) -10) 'sublang))
-
-(defconstant nls-valid-locale-mask #x000FFFFF)
-
-(declaim (inline make-locale-id))
-(defun make-locale-id (lang-id sort-id)
-  (logand nls-valid-locale-mask
-          (logior (ash (logand #xFFFF (convert sort-id 'lang-sort)) 16)
-                  (logand #xFFFF lang-id))))
-
-(declaim (inline make-sort-locale-id))
-(defun make-sort-locale-id (lang-id sort-id sort-version)
-  (logand nls-valid-locale-mask
-          (logior (make-locale-id lang-id sort-id)
-                  (ash (logand #xFFFF sort-version) 20))))
-
-(declaim (inline lang-id-from-locale-id))
-(defun lang-id-from-locale-id (locale-id)
-  (logand #xFFFF locale-id))
-
-(declaim (inline sort-id-from-locale-id))
-(defun sort-id-from-locale-id (locale-id)
-  (translate (logand #xf (ash locale-id -16)) 'lang-sort))
-
-(declaim (inline sort-version-from-locale-id))
-(defun sort-version-from-locale-id (locale-id)
-  (logand #xF (ash locale-id -20)))
-
-
-(defconstant lang-system-default (make-lang-id :neutral :sys-default))
-(defconstant lang-user-default (make-lang-id :neutral :default))
-
-(defconstant locale-system-default (make-locale-id
-                                     lang-system-default
-                                     :default))
-
-(defconstant locale-user-default (make-locale-id
-                                   lang-user-default
-                                   :default))
-
-(defconstant locale-neutral (make-locale-id
-                              (make-lang-id :neutral :neutral)
-                              :default))
-
-(defconstant locale-invariant (make-locale-id
-                                  (make-lang-id :invariant :neutral)
-                                :default))
-
-);;eval-when

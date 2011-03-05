@@ -22,28 +22,44 @@
 ;;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;;; DEALINGS IN THE SOFTWARE
 
-(in-package #:doors.com)
+(in-package #:cl-user)
 
-(define-results com-error (windows-error)
-  ()
-  ((not-implemented #x80004001
-     "Not implemented")
-   (no-interface #x80004002
-     "No such interface supported")
-   (invalid-pointer #x80004003
-     "Invalid pointer")
-   (abort #x80004004
-     "Operation aborted")
-   (failure #x80004005
-     "Unspecified error")
-   (data-pending #x8000000A
-     "The data necessary to complete this operation is not yet available")
-   (class-not-available #x8040111
-     "ClassFactory cannot supply requested class")
-   (class-not-registered #x80040154
-     "Class not registered"))
-  (:conc-name error-))
-
-(defun com-error-code (error)
-  (declare (type com-error error))
-  (slot-value error 'code))
+(defpackage #:doors.gdi
+  (:use #:cl #:alexandria #:virgil #:doors)
+  (:nicknames #:gdi)
+  (:export
+    
+    ;;rectangles
+    #:rect
+    #:make-rect
+    #:copy-rect
+    #:rect-p
+    #:rect-left
+    #:rect-top
+    #:rect-right
+    #:rect-bottom
+    #:point
+    #:make-point
+    #:copy-point
+    #:point-p
+    #:pt-x
+    #:pt-y
+    #:point*
+    #:make-point*
+    #:copy-point*
+    #:point-p*
+    #:pt-x*
+    #:pt-y*
+    
+    ;;bitmaps
+    #:size
+    #:make-size
+    #:copy-size
+    #:size-p
+    #:size-cx
+    #:size-cy
+    #:blend-function
+    #:make-bf
+    #:bf-source-constant-alpha
+    
+    ))

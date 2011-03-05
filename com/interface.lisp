@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -30,7 +30,15 @@
 (defvar *pointer-to-interface-mapping* (make-weak-hash-table :test #'equal
                                          :weakness :value))
 
-(defvar *iid-to-interface-class-mapping* (make-hash-table :test #'equalp))
+(defvar *iid-to-interface-class-mapping* (make-weak-hash-table :test #'equalp
+                                           :weakness :value))
+
+(defvar *registered-interfaces* '())
+
+(defvar *mta-post-mortem-thread* nil)
+(defvar *mta-post-mortem-lock* nil)
+(defvar *mta-post-mortem-condvar* nil)
+(defvar *mta-post-mortem-queue* '())
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
 
@@ -247,3 +255,101 @@
                            (error 'com-error :code error-no-interface))))
            (setf (deref ,pointer 'guid) (the guid ,guid))
            ,value)))))
+
+(declaim (inline %release))
+(defun %release (pointer)
+  (declare (type pointer pointer))
+  (external-pointer-call
+    (deref (&+ (deref pointer '*) 2 '*) '*)
+    ((:stdcall)
+     (ulong)
+     (pointer this :aux pointer))))
+
+(declaim (inline %current-tid))
+(defun %current-tid ()
+  (external-function-call
+    "GetCurrentThreadId"
+    ((:stdcall kernel32)
+     (dword))))
+
+(defun %apartment-type ()
+  (let ((context (external-function-call
+                   "CoGetContextToken"
+                   ((:stdcall ole32)
+                    (dword rv (if (zerop rv) context nil))
+                    ((& pointer :out) context :aux))))
+        ;;IID_IComThreadingInfo:
+        (%info-iid (guid #x000001CE #x0000 #x0000
+                         #xC0 #x00 #x00 #x00 #x00 #x00 #x00 #x46)))
+    (declare (dynamic-extent %info-iid))
+    (when context
+      (let ((info (external-pointer-call
+                    (deref (deref context '*) '*) ;;QueryInterface
+                    ((:stdcall)
+                     (dword rv (if (zerop rv)
+                                 info
+                                 nil))
+                     (pointer this :aux context)
+                     ((& guid) iid :aux %info-iid)
+                     ((& pointer :out) info :aux)))))
+        (when info
+          (unwind-protect
+              (external-pointer-call
+                (deref (&+ (deref info '*) 3 '*) '*)
+                ((:stdcall)
+                 (dword rv (if (zerop rv)
+                             (case type
+                               ((0 3) :sta)
+                               (1 :mta)
+                               (2 :na))
+                             nil))
+                 (pointer this :aux info)
+                 ((& dword :out) type :aux)))
+            (%release info)))))))
+
+(defmacro without-interrupts (&body body)
+  `(#+(and thread-support sbcl) sb-sys:without-interrupts
+    #+(and thread-support ccl) ccl:without-interrupts
+    #+(and thread-support scl) sys:without-interrupts
+    #+(and thread-support lispworks) mp:without-interrupts
+    #+(and thread-support allegro) mp:without-delayed-interrupts
+    #+(and thread-support ecl) ext:without-interrupts
+    #+(and thread-support digitool) ccl:without-interrupts
+    #+(and thread-support cmu) system:without-interrupts
+    #-(or sbcl ccl scl lispworks allegro ecl digitool cmu thread-support) progn
+     ,@body))
+
+(defun %mta-post-mortem-thread-function () 
+  (external-function-call
+    "CoInitializeEx"
+    ((:stdcall ole32)
+     (hresult)
+     (pointer reserved :aux &0)
+     (dword type :aux 0)))
+  (bt:with-lock-held (*mta-post-mortem-lock*)
+    (bt:condition-notify *mta-post-mortem-condvar*))
+  (bt:acquire-lock *mta-post-mortem-lock*)
+  (loop
+    (loop :for current = (pop *mta-post-mortem-queue*)
+      :while current :do
+      (destructuring-bind (function . args) current
+        (apply function args)))
+    (bt:condition-wait *mta-post-mortem-condvar*
+                       *mta-post-mortem-lock*)))
+
+(defun %ensure-mta-post-mortem-thread ()  
+  #+thread-support
+  (unless (and *mta-post-mortem-thread*
+               (bt:thread-alive-p *mta-post-mortem-thread*))
+    (setf *mta-post-mortem-queue* '()
+          *mta-post-mortem-lock* (bt:make-lock "COM MTA post-mortem thread's lock")
+          *mta-post-mortem-condvar* (bt:make-condition-variable))
+    (bt:acquire-lock *mta-post-mortem-lock*)
+    (setf *mta-post-mortem-thread* (bt:make-thread #'%mta-post-mortem-thread-function
+                                     :name "COM MTA post-mortem thread"))
+    (bt:condition-wait *mta-post-mortem-condvar*
+                       *mta-post-mortem-lock*)
+    (bt:release-lock *mta-post-mortem-lock*))
+  (values))
+
+(%ensure-mta-post-mortem-thread)

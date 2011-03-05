@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -26,7 +26,7 @@
 
 (define-external-function
     ("AttachThreadInput" (:camel-case))
-    (:stdcall kernel32)
+    (:stdcall user32)
   (bool rv (if rv
              attach
              #-(or win2000 winxp winxp64 winserver2003 winhomeserver)
@@ -37,3 +37,11 @@
   (id-attach dword)
   (id-attach-to dword)
   (attach boolean))
+
+(define-external-function
+    ("GetCurrentThreadId" current-thread-id)
+    (:stdcall kernel32)
+  (dword)
+  "Retrieves the thread identifier of the calling thread.")
+
+(define-symbol-macro current-thread-id (current-thread-id))

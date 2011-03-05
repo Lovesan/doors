@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -70,7 +70,7 @@
                (:list t)
                (:conc-name coinit-))
   (:multithreaded       0)
-  (:apartament-threaded 2)
+  (:apartment-threaded 2)
   (:disable-ole1-dde    4)
   (:speed-over-memory   8))
 

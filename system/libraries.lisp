@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -33,6 +33,9 @@
 (define-foreign-library user32
   (T (:default "user32")))
 
+(define-foreign-library comctl32
+  (T (:default "comctl32")))
+
 (define-foreign-library gdi32
   (T (:default "gdi32")))
 
@@ -48,15 +51,20 @@
 (define-foreign-library ole32
   (t (:default "ole32")))
 
+(define-foreign-library oleaut32
+  (t (:default "oleaut32")))
+
 (define-foreign-library secur32
   (t (:default "secur32")))
 
 (use-foreign-library ntdll)
 (use-foreign-library kernel32)
 (use-foreign-library user32)
+(use-foreign-library comctl32)
 (use-foreign-library gdi32)
 (use-foreign-library ws2-32)
 (use-foreign-library advapi32)
 (use-foreign-library psapi)
 (use-foreign-library ole32)
+(use-foreign-library oleaut32)
 (use-foreign-library secur32)

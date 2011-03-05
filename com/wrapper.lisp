@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -74,7 +74,7 @@
    &key context server-info &allow-other-keys)
   (declare (ignore slot-names initargs))
   (check-type server-info (or null void server-info))
-  (unless server-info (setf server-info void))    
+  (unless server-info (setf server-info void))
   (let* ((context (convert context 'class-context-flags))
          (class (let ((class (class-of object)))
                   (assert (typep class 'com-wrapper-class) ()
@@ -94,14 +94,42 @@
                        (pointer results :aux pmqi)))
                     (deref pmqi 'hresult (offsetof 'multi-qi 'hresult))
                     (deref pmqi 'pointer (offsetof 'multi-qi 'interface))))
-         (interfaces (make-hash-table :test #'eq)))
-    (declare (type pointer unknown))
+         (interfaces (make-hash-table :test #'eq))
+         (thread (bt:current-thread))
+         (thread-id (%current-tid))
+         (apartment (%apartment-type))
+         (finalizer (lambda (unknown interfaces)
+                      (declare (type pointer unknown)
+                               (type hash-table interfaces))
+                      (without-interrupts
+                        (%release unknown)
+                        (maphash (lambda (class pointer)
+                                   (declare (ignore class))
+                                   (%release pointer))
+                          interfaces)))))
+    (declare (type pointer unknown)
+             (type function finalizer))
     (finalize object (lambda ()
-                       (external-pointer-call
-                         (deref (&+ (deref unknown '*) 2 '*) '*)
-                         ((:stdcall)
-                          (ulong)
-                          (pointer this :aux unknown)))))      
+                       #+thread-support
+                       (let ((this-thread-id (%current-tid))
+                             (this-apartment (%apartment-type)))
+                         (if (= this-thread-id thread-id)
+                           (when (eq apartment this-apartment)
+                             (funcall finalizer unknown interfaces))
+                           (case apartment
+                             (:sta (when (bt:thread-alive-p thread)
+                                     (bt:interrupt-thread thread
+                                       (lambda (finalizer apartment unknown interfaces)
+                                         (when (eq apartment (%apartment-type))
+                                           (funcall finalizer unknown interfaces)))
+                                       finalizer apartment unknown interfaces)))
+                             (T (bt:with-lock-held (*mta-post-mortem-lock*)
+                                  (push (list finalizer unknown interfaces)
+                                        *mta-post-mortem-queue*)
+                                  (bt:condition-notify *mta-post-mortem-condvar*))))))
+                       #-thread-support
+                       (when (eq apartment (%apartment-type))
+                         (funcall finalizer unknown interfaces))))
     (dolist (interface-class (slot-value class '%interfaces))
       (setf (gethash (class-name interface-class) interfaces)
             (prog1 (external-pointer-call
@@ -110,10 +138,5 @@
                       (hresult rv ptr)
                       (pointer this :aux unknown)
                       ((& iid) iid :aux interface-class)
-                      ((& pointer :out) ptr :aux &0)))
-             (external-pointer-call
-               (deref (&+ (deref unknown '*) 2 '*) '*)
-               ((:stdcall)
-                (ulong)
-                (pointer this :aux unknown))))))
+                      ((& pointer :out) ptr :aux &0))))))
     (setf (%wrapper-interface-pointers object) interfaces)))
