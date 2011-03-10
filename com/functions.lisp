@@ -84,12 +84,12 @@
                                  (muffle-warning c))))
               (translate rv 'hresult)))
   "Initializes the COM library on the current thread and identifies the concurrency model as single-thread apartment (STA)."
-  (reserved pointer :aux (progn (%ensure-mta-post-mortem-thread) &0)))
+  (reserved pointer :aux &0))
 
 (define-external-function
     ("CoUninitialize" uninitialize-com)
     (:stdcall ole32)
-  (void)
+  (void rv (values))
   "Closes the COM library on the current thread, unloads all DLLs loaded by the thread, frees any other resources that the thread maintains, and forces all RPC connections on the thread to close. ")
 
 (define-external-function
@@ -155,7 +155,7 @@
                                  (muffle-warning c))))
               (translate rv 'hresult)))
   "Initializes the COM library for use by the calling thread, sets the thread's concurrency model, and creates a new apartment for the thread if one is required."
-  (reserved pointer :aux (progn (%ensure-mta-post-mortem-thread) &0))
+  (reserved pointer :aux &0)
   (flags com-init-flags :optional))
 
 (define-external-function
@@ -248,3 +248,15 @@
     (:stdcall ole32)
   (ulong)
   "Decrements the global per-process reference count.")
+
+(define-external-function
+    ("CoResumeClassObjects" resume-class-objects)
+    (:stdcall ole32)
+  (hresult)
+  "Called by a server that can register multiple class objects to inform the SCM about all registered classes, and permits activation requests for those class objects.")
+
+(define-external-function
+    ("CoSuspendClassObjects" suspend-class-objects)
+    (:stdcall ole32)
+  (hresult)
+  "Prevents any new activation requests from the SCM on all class objects registered within the process.")

@@ -31,6 +31,20 @@
     ((class com-wrapper-class) (superclass com-wrapper-class))
   nil)
 
+(closer-mop:defmethod shared-initialize :around ((class com-wrapper-class) slot-names &rest initargs
+                                                 &key direct-superclasses &allow-other-keys)
+  (remf initargs :direct-superclasses)
+  (let ((direct-superclasses (if (find-if (lambda (superclass)
+                                            (subtypep (class-name superclass) 'com-wrapper))
+                                          direct-superclasses)
+                               direct-superclasses
+                               (append direct-superclasses (list (find-class 'com-wrapper))))))
+    (apply #'call-next-method
+           class
+           slot-names
+           :direct-superclasses direct-superclasses
+           initargs)))
+
 (closer-mop:defmethod shared-initialize :after
   ((class com-wrapper-class) slot-names &rest initargs
    &key interfaces &allow-other-keys)
@@ -56,17 +70,15 @@
                                         (if (consp name)
                                           (list* (find-class t)
                                                  class
-                                                 (mapcar (constantly
-                                                           (find-class t))
-                                                   (cddr primary)))
-                                          (list* class (mapcar (constantly
-                                                                 (find-class t))
-                                                         (cdr primary))))
+                                                 (mapcar (constantly (find-class t))
+                                                   (cdr primary)))
+                                          (list* class (mapcar (constantly (find-class t))
+                                                         primary)))
                                         :function function))))
                                   (%interface-class-wrapper-functions
                                     interface-class))
                               interface-class)
-                      interfaces)))
+                      (remove-duplicates (cons (find-class 'unknown) interfaces)))))
     (setf (slot-value class '%interfaces) interfaces)))
 
 (closer-mop:defmethod shared-initialize :after
@@ -80,7 +92,8 @@
                   (assert (typep class 'com-wrapper-class) ()
                     'type-error :datum class :expected-type 'com-wrapper-class)
                   class))
-         (unknown (with-pointer (pmqi (make-multi-qi :iid 'unknown)
+         (unknown-class (find-class 'unknown))
+         (unknown (with-pointer (pmqi (make-multi-qi :iid unknown-class)
                                       'multi-qi)
                     (external-function-call
                       "CoCreateInstanceEx"
@@ -94,49 +107,67 @@
                        (pointer results :aux pmqi)))
                     (deref pmqi 'hresult (offsetof 'multi-qi 'hresult))
                     (deref pmqi 'pointer (offsetof 'multi-qi 'interface))))
-         (interfaces (make-hash-table :test #'eq))
-         (thread (bt:current-thread))
-         (thread-id (%current-tid))
-         (apartment (%apartment-type))
-         (finalizer (lambda (unknown interfaces)
-                      (declare (type pointer unknown)
-                               (type hash-table interfaces))
-                      (without-interrupts
-                        (%release unknown)
-                        (maphash (lambda (class pointer)
-                                   (declare (ignore class))
-                                   (%release pointer))
-                          interfaces)))))
+         (unknown-cookie (%add-to-git unknown))
+         (interfaces (setf (%wrapper-interface-pointers object)
+                           (make-hash-table :test #'eq)))
+         (interface-cookies (make-hash-table :test #'eq))
+         (token (%com-wrapper-token object))
+         (finalizer (lambda (token)
+                      (declare (type cons token))
+                      (destructuring-bind
+                          (unknown-cookie . interface-cookies) token
+                        (when unknown-cookie
+                          (%revoke-from-git unknown-cookie)
+                          (setf (car token) nil))
+                        (when interface-cookies
+                          (loop :for cookie :of-type dword :being :the :hash-values
+                            :of interface-cookies
+                            :do (%revoke-from-git cookie))
+                          (setf (cdr token) nil))))))
     (declare (type pointer unknown)
-             (type function finalizer))
+             (type cons token)
+             (type dword unknown-cookie)
+             (type function finalizer)
+             (type hash-table interfaces interface-cookies))
+    (setf (car token) unknown-cookie
+          (cdr token) interface-cookies)
     (finalize object (lambda ()
                        #+thread-support
-                       (let ((this-thread-id (%current-tid))
-                             (this-apartment (%apartment-type)))
-                         (if (= this-thread-id thread-id)
-                           (when (eq apartment this-apartment)
-                             (funcall finalizer unknown interfaces))
-                           (case apartment
-                             (:sta (when (bt:thread-alive-p thread)
-                                     (bt:interrupt-thread thread
-                                       (lambda (finalizer apartment unknown interfaces)
-                                         (when (eq apartment (%apartment-type))
-                                           (funcall finalizer unknown interfaces)))
-                                       finalizer apartment unknown interfaces)))
-                             (T (bt:with-lock-held (*mta-post-mortem-lock*)
-                                  (push (list finalizer unknown interfaces)
-                                        *mta-post-mortem-queue*)
-                                  (bt:condition-notify *mta-post-mortem-condvar*))))))
+                       (bt:with-lock-held (*mta-post-mortem-lock*)
+                         (push (list finalizer token)
+                               *mta-post-mortem-queue*)
+                         (bt:condition-notify *mta-post-mortem-condvar*))
                        #-thread-support
-                       (when (eq apartment (%apartment-type))
-                         (funcall finalizer unknown interfaces))))
-    (dolist (interface-class (slot-value class '%interfaces))
-      (setf (gethash (class-name interface-class) interfaces)
-            (prog1 (external-pointer-call
-                     (deref (deref unknown '*) '*)
-                     ((:stdcall)
-                      (hresult rv ptr)
-                      (pointer this :aux unknown)
-                      ((& iid) iid :aux interface-class)
-                      ((& pointer :out) ptr :aux &0))))))
-    (setf (%wrapper-interface-pointers object) interfaces)))
+                       (funcall finalizer token)))
+    (setf (gethash 'unknown interfaces) unknown)
+    (dolist (interface-class (remove unknown-class (slot-value class '%interfaces)))
+      (let ((interface (external-pointer-call
+                        (deref (deref unknown '*) '*)
+                        ((:stdcall)
+                         (hresult rv ptr)
+                         (pointer this :aux unknown)
+                         ((& iid) iid :aux interface-class)
+                         ((& pointer :out) ptr :aux &0)))))
+        (setf (gethash (class-name interface-class) interfaces)
+              interface
+              (gethash (class-name interface-class) interface-cookies)
+              (%add-to-git interface))))))
+
+(closer-mop:defmethod add-ref :around ((object com-wrapper))
+  (if (car (the cons (%com-wrapper-token object)))
+    1
+    0))
+
+(closer-mop:defmethod release :around ((object com-wrapper))
+  (let ((token (the cons (%com-wrapper-token object))))
+    (destructuring-bind
+        (unknown-cookie . interface-cookies) token
+      (when unknown-cookie
+        (%revoke-from-git unknown-cookie)
+        (setf (car token) nil))
+      (when interface-cookies
+        (loop :for cookie :of-type dword :being :the :hash-values
+          :of interface-cookies
+          :do (%revoke-from-git cookie))
+        (setf (cdr token) nil))))
+  0)

@@ -29,73 +29,45 @@
   "Lisp wrapper for IUnknown interface"
   (query-interface
     ((hresult com-error) rv
-      (translate-interface
-        (com-interface-pointer interface) iid T))
+      (translate-interface interface iid T))
     (iid (& iid))
-    (interface (& unknown :out) :aux))
+    (interface (& pointer :out) :aux))
   (add-ref (ulong))
   (release (ulong)))
 
-(defmethod add-ref :around ((object unknown))
-  (symbol-macrolet ((ref-count (aref (the (simple-array fixnum (1))
-                                          (closer-mop:standard-instance-access
-                                            object
-                                            ref-count-slot-location))
-                                     0)))
-      (prog1 (call-next-method)
-       (incf ref-count))))
+(closer-mop:defmethod add-ref :around ((object unknown))
+  (let ((token (%com-interface-token object)))
+    (unless (cdr token)
+      (call-next-method)
+      (setf (cdr token) (%add-to-git (com-interface-pointer object))))
+    1))
 
-(defmethod release :around ((object unknown))
-  (symbol-macrolet ((ref-count (aref (the (simple-array fixnum (1))
-                                          (closer-mop:standard-instance-access
-                                            object
-                                            ref-count-slot-location))
-                                     0)))
-    (if (> ref-count 0)
-      (prog1 (call-next-method)
-       (decf ref-count))
-      0)))
+(closer-mop:defmethod release :around ((object unknown))
+  (let ((token (%com-interface-token object)))
+    (when (cdr token)
+      (%revoke-from-git (cdr token))
+      (setf (cdr token) nil))
+    0))
 
-(defmethod shared-initialize :after
+(closer-mop:defmethod shared-initialize :after
   ((object unknown) slot-names &rest initargs &key &allow-other-keys)
   (declare (ignore slot-names initargs))
-  (let* ((pobject (com-interface-pointer object))
-         (thread (bt:current-thread))
-         (thread-id (%current-tid))
-         (apartment (%apartment-type))
-         (ref-count (closer-mop:standard-instance-access object ref-count-slot-location))
-         (finalizer (lambda (unknown count)
-                      (declare (type pointer unknown)
-                               (type non-negative-fixnum count))
-                      (without-interrupts
-                        (dotimes (i count)
-                          (%release unknown))))))
-    (declare (type pointer pobject)
-             (type dword thread-id)
-             (type function finalizer)
-             (type (simple-array fixnum (1)) ref-count))
-    (when (&? pobject)
-      (finalize object (lambda ()
-                         #+thread-support
-                         (let ((this-thread-id (%current-tid))
-                               (this-apartment (%apartment-type)))
-                           (if (= thread-id this-thread-id)
-                             (when (eq apartment this-apartment)
-                               (funcall finalizer pobject (aref ref-count 0)))
-                             (case apartment
-                               (:sta (when (bt:thread-alive-p thread)
-                                       (bt:interrupt-thread thread
-                                         (lambda (finalizer apartment unknown count)
-                                           (when (eq apartment (%apartment-type))
-                                             (funcall finalizer unknown count)))
-                                         finalizer apartment pobject (aref ref-count 0))))
-                               (T (bt:with-lock-held (*mta-post-mortem-lock*)
-                                    (push (list finalizer pobject (aref ref-count 0))
-                                          *mta-post-mortem-queue*)
-                                    (bt:condition-notify *mta-post-mortem-condvar*))))))
-                         #-thread-support
-                         (when (eq apartment (%apartment-type))
-                           (funcall finalizer pobject (aref ref-count 0))))))))
+  (let* ((token (%com-interface-token object))
+         (finalizer (lambda (token)
+                      (declare (type cons token))
+                      (when (cdr token)
+                        (%revoke-from-git (cdr token))
+                        (setf (cdr token) nil)))))
+    (declare (type function finalizer)
+             (type cons token))
+    (setf (car token) t)
+    (finalize object (lambda ()
+                       #+thread-support
+                       (bt:with-lock-held (*mta-post-mortem-lock*)
+                         (push (list finalizer token) *mta-post-mortem-queue*)
+                         (bt:condition-notify *mta-post-mortem-condvar*))
+                       #-thread-support
+                       (funcall finalizer token)))))
 
 (defmacro with-interface ((var interface) &body body)
   `(let ((,var ,interface))

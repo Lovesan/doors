@@ -68,18 +68,14 @@
 (defun register-server ()
   (let ((class (find-class 'hello-world-object)))
     (when (slot-value class 'server-atom)
-      (ignore-errors
-        (revoke-class-object (slot-value class 'server-atom))))
+      (ignore-errors (revoke-class-object (slot-value class 'server-atom))))
     (setf (slot-value class 'server-atom)
-          (progn
-            (handler-bind
-              ((windows-status (lambda (c)
-                                 (uninitialize-com)
-                                 (muffle-warning c))))
-              (initialize-com* :multithreaded))
-            (register-class-object class '(:inproc-server :local-server))))))
+          (register-class-object class
+                                 '(:inproc-server :local-server)
+                                 '(:multiple-use :suspended))))
+  (resume-class-objects))
 
-(closer-mop:defclass hello-world-wrapper (com-wrapper)
+(closer-mop:defclass hello-world-wrapper ()
   ()
   (:metaclass com-wrapper-class)
   (:interfaces hello-world)
@@ -87,7 +83,11 @@
 
 (defun run-server ()
   (initialize-com)
-  (loop :with atom = (register-class-object 'hello-world-object :local-server)
+  (loop :with atom = (prog1
+                      (register-class-object 'hello-world-object
+                                             :local-server
+                                             '(:multiple-use :suspended))
+                      (resume-class-objects))
     :for msg = (get-message) :until (null msg)
     :do (dispatch-message msg)
     :finally (revoke-class-object atom))

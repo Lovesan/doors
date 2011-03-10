@@ -33,6 +33,8 @@
 (defvar *iid-to-interface-class-mapping* (make-weak-hash-table :test #'equalp
                                            :weakness :value))
 
+(defvar *global-interface-table* nil)
+
 (defvar *registered-interfaces* '())
 
 (defvar *mta-post-mortem-thread* nil)
@@ -64,17 +66,32 @@
   
 (closer-mop:defclass com-interface ()
   ((com-pointer :initform &0 :initarg :pointer)
-   (ref-count :initform (make-array 1 :element-type 'fixnum :initial-element 0)))
+   (%token :initform (cons nil nil))) ;;(is IUnknown? . GIT token)
   (:metaclass com-interface-class))
   
+(closer-mop:defmethod change-class ((object com-interface) new-class &rest initargs)
+  (declare (ignore initargs))
+  (error "You can not change class of existing COM interface wrapper"))
+  
 (closer-mop:defclass com-wrapper ()
-  ((%wrapper-interface-pointers
+  ((%token :initform (cons nil nil) :accessor %com-wrapper-token :type cons)
+   (%wrapper-interface-pointers
      :accessor %wrapper-interface-pointers)
    (%context-flags :initarg :context
                    :reader com-wrapper-context)
    (%server-info :initarg :server-info
                  :reader com-wrapper-server-info))
   (:default-initargs :context :all :server-info nil))
+  
+(closer-mop:defmethod change-class
+    ((object com-wrapper) new-class &rest initargs)
+  (declare (ignore new-class initargs))
+  (error "You can not change class of existing COM wrapper"))
+  
+(closer-mop:defmethod reinitialize-instance
+    ((object com-wrapper) &rest initargs &key &allow-other-keys)
+  (declare (ignore initargs))
+  (error "You can not reinitialize instance of COM wrapper"))
   
 (closer-mop:defclass com-generic-function (closer-mop:standard-generic-function)
   ()
@@ -128,14 +145,91 @@
                         'pointer
                         (* index (sizeof 'pointer))))))
 
-(defconstant ref-count-slot-location
+(defconstant token-slot-location
     (closer-mop:slot-definition-location
-        (find 'ref-count
+        (find '%token
               (closer-mop:class-slots (find-class 'com-interface))
               :key #'closer-mop:slot-definition-name)))
 
+(declaim (inline %com-interface-token))
+(defun %com-interface-token (interface)
+  (declare (type com-interface interface))
+  (the cons (closer-mop:standard-instance-access interface token-slot-location)))
+
 (defmethod uuid-of ((class com-interface-class))
   (slot-value class '%iid))
+
+(declaim (inline %release))
+(defun %release (pointer)
+  (declare (type pointer pointer))
+  (external-pointer-call
+    (deref (&+ (deref pointer '*) 2 '*) '*)
+    ((:stdcall)
+     (ulong)
+     (pointer this :aux pointer))))
+
+(defun %apartment-type ()
+  (let ((context (external-function-call
+                   "CoGetContextToken"
+                   ((:stdcall ole32)
+                    (dword rv (if (zerop rv) context nil))
+                    ((& pointer :out) context :aux))))
+        ;;IID_IComThreadingInfo:
+        (%info-iid (load-time-value
+                     (guid #x000001CE #x0000 #x0000
+                           #xC0 #x00 #x00 #x00 #x00 #x00 #x00 #x46)
+                     t)))
+    (declare (dynamic-extent %info-iid))
+    (when context
+      (let ((info (external-pointer-call
+                    (deref (deref context '*) '*) ;;QueryInterface
+                    ((:stdcall)
+                     (dword rv (if (zerop rv)
+                                 info
+                                 nil))
+                     (pointer this :aux context)
+                     ((& guid) iid :aux %info-iid)
+                     ((& pointer :out) info :aux)))))
+        (when info
+          (unwind-protect
+              (external-pointer-call
+                (deref (&+ (deref info '*) 3 '*) '*)
+                ((:stdcall)
+                 (dword rv (if (zerop rv)
+                             (case type
+                               ((0 3) :sta)
+                               (1 :mta)
+                               (2 :na))
+                             nil))
+                 (pointer this :aux info)
+                 ((& dword :out) type :aux)))
+            (%release info)))))))
+
+(declaim (inline %add-to-git))
+(defun %add-to-git (pointer)
+  (declare (type pointer pointer))
+  (prog1 (external-pointer-call
+           (deref (&+ (deref *global-interface-table* '*) 3 '*) '*)
+           ((:stdcall)
+            (hresult rv cookie)
+            (pointer this :aux *global-interface-table*)
+            (pointer unknown :aux pointer)
+            ((& guid) iid :aux (load-time-value
+                                 (guid #x00000000 #x0000 #x0000
+                                       #xC0 #x00 #x00 #x00 #x00 #x00 #x00 #x46)
+                                 t))
+            ((& dword :out) cookie :aux)))
+   (%release pointer)))
+
+(declaim (inline %revoke-from-git))
+(defun %revoke-from-git (cookie)
+  (declare (type dword cookie))
+  (external-pointer-call
+    (deref (&+ (deref *global-interface-table* '*) 4 '*) '*)
+    ((:stdcall)
+     (dword rv (zerop rv))
+     (pointer this :aux *global-interface-table*)
+     (dword cookie :aux cookie))))
 
 (defun translate-interface (pointer class &optional add-ref)
   (declare (type pointer pointer)
@@ -146,16 +240,22 @@
   (if (&? pointer)
     (let* ((address (the size-t (&& pointer)))
            (typed-pointer (cons address class))
-           (interface (gethash typed-pointer *pointer-to-interface-mapping*)))
-      (unless interface
-        (setf (gethash typed-pointer *pointer-to-interface-mapping*)
-              (setf interface (make-instance class :pointer pointer))))
-      (when add-ref
-        (incf (aref (the (simple-array fixnum (1))
-                         (closer-mop:standard-instance-access
-                           interface
-                           ref-count-slot-location))
-                    0)))
+           (interface (the com-interface
+                           (or (gethash typed-pointer *pointer-to-interface-mapping*)
+                               (setf (gethash typed-pointer *pointer-to-interface-mapping*)
+                                     (make-instance class :pointer pointer)))))
+           (token (the cons (%com-interface-token interface))))
+      (when (and add-ref (car token))
+        #-thread-support
+        (unless (%apartment-type)
+          (external-function-call
+            "CoInitialize"
+            ((:stdcall ole32)
+             (dword)
+             (pointer reserved :aux &0))))
+        (if (cdr token)
+          (%release pointer)
+          (setf (cdr token) (%add-to-git pointer))))
       interface)
     nil))
 
@@ -256,15 +356,6 @@
            (setf (deref ,pointer 'guid) (the guid ,guid))
            ,value)))))
 
-(declaim (inline %release))
-(defun %release (pointer)
-  (declare (type pointer pointer))
-  (external-pointer-call
-    (deref (&+ (deref pointer '*) 2 '*) '*)
-    ((:stdcall)
-     (ulong)
-     (pointer this :aux pointer))))
-
 (declaim (inline %current-tid))
 (defun %current-tid ()
   (external-function-call
@@ -272,53 +363,7 @@
     ((:stdcall kernel32)
      (dword))))
 
-(defun %apartment-type ()
-  (let ((context (external-function-call
-                   "CoGetContextToken"
-                   ((:stdcall ole32)
-                    (dword rv (if (zerop rv) context nil))
-                    ((& pointer :out) context :aux))))
-        ;;IID_IComThreadingInfo:
-        (%info-iid (guid #x000001CE #x0000 #x0000
-                         #xC0 #x00 #x00 #x00 #x00 #x00 #x00 #x46)))
-    (declare (dynamic-extent %info-iid))
-    (when context
-      (let ((info (external-pointer-call
-                    (deref (deref context '*) '*) ;;QueryInterface
-                    ((:stdcall)
-                     (dword rv (if (zerop rv)
-                                 info
-                                 nil))
-                     (pointer this :aux context)
-                     ((& guid) iid :aux %info-iid)
-                     ((& pointer :out) info :aux)))))
-        (when info
-          (unwind-protect
-              (external-pointer-call
-                (deref (&+ (deref info '*) 3 '*) '*)
-                ((:stdcall)
-                 (dword rv (if (zerop rv)
-                             (case type
-                               ((0 3) :sta)
-                               (1 :mta)
-                               (2 :na))
-                             nil))
-                 (pointer this :aux info)
-                 ((& dword :out) type :aux)))
-            (%release info)))))))
-
-(defmacro without-interrupts (&body body)
-  `(#+(and thread-support sbcl) sb-sys:without-interrupts
-    #+(and thread-support ccl) ccl:without-interrupts
-    #+(and thread-support scl) sys:without-interrupts
-    #+(and thread-support lispworks) mp:without-interrupts
-    #+(and thread-support allegro) mp:without-delayed-interrupts
-    #+(and thread-support ecl) ext:without-interrupts
-    #+(and thread-support digitool) ccl:without-interrupts
-    #+(and thread-support cmu) system:without-interrupts
-    #-(or sbcl ccl scl lispworks allegro ecl digitool cmu thread-support) progn
-     ,@body))
-
+#+thread-support
 (defun %mta-post-mortem-thread-function () 
   (external-function-call
     "CoInitializeEx"
@@ -326,6 +371,24 @@
      (hresult)
      (pointer reserved :aux &0)
      (dword type :aux 0)))
+  (let ((clsid-git (load-time-value
+                     (guid #x00000323 #x0000 #x0000
+                           #xC0 #x00 #x00 #x00 #x00 #x00 #x00 #x46)
+                     t))
+        (iid-git (load-time-value
+                   (guid #x00000146 #x0000 #x0000
+                         #xC0 #x00 #x00 #x00 #x00 #x00 #x00 #x46)
+                   t)))
+    (declare (dynamic-extent clsid-git iid-git))
+    (setf *global-interface-table* (external-function-call
+                                     "CoCreateInstance"
+                                     ((:stdcall ole32)
+                                      (hresult rv git)
+                                      ((& guid) clsid :aux clsid-git)
+                                      (pointer outer :aux &0)
+                                      (dword context :aux 1) ;;CLSCTX_INPROC_SERVER
+                                      ((& guid) iid :aux iid-git)
+                                      ((& pointer :out) git :aux)))))
   (bt:with-lock-held (*mta-post-mortem-lock*)
     (bt:condition-notify *mta-post-mortem-condvar*))
   (bt:acquire-lock *mta-post-mortem-lock*)
@@ -337,7 +400,7 @@
     (bt:condition-wait *mta-post-mortem-condvar*
                        *mta-post-mortem-lock*)))
 
-(defun %ensure-mta-post-mortem-thread ()  
+(defun %ensure-mta-post-mortem-thread ()
   #+thread-support
   (unless (and *mta-post-mortem-thread*
                (bt:thread-alive-p *mta-post-mortem-thread*))
@@ -350,6 +413,32 @@
     (bt:condition-wait *mta-post-mortem-condvar*
                        *mta-post-mortem-lock*)
     (bt:release-lock *mta-post-mortem-lock*))
+  #-thread-support
+  (unless (%apartment-type)
+    (external-function-call
+      "CoInitialize"
+      ((:stdcall ole32)
+       (dword)
+       (pointer reserved :aux &0))))
+  #-thread-support
+  (let ((clsid-git (load-time-value
+                     (guid #x00000323 #x0000 #x0000
+                           #xC0 #x00 #x00 #x00 #x00 #x00 #x00 #x46)
+                     t))
+        (iid-git (load-time-value
+                   (guid #x00000146 #x0000 #x0000
+                         #xC0 #x00 #x00 #x00 #x00 #x00 #x00 #x46)
+                   t)))
+    (declare (dynamic-extent clsid-git iid-git))
+    (setf *global-interface-table* (external-function-call
+                                     "CoCreateInstanceEx"
+                                     ((:stdcall ole32)
+                                      (hresult rv git)
+                                      ((& guid) clsid :aux clsid-git)
+                                      (pointer outer :aux &0)
+                                      (dword context :aux 1) ;;CLSCTX_INPROC_SERVER
+                                      ((& guid) iid :aux iid-git)
+                                      ((& pointer :out) git :aux)))))
   (values))
 
 (%ensure-mta-post-mortem-thread)

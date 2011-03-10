@@ -192,6 +192,8 @@
     #:create-com-instance*
     #:add-ref-server-process
     #:release-server-process
+    #:suspend-class-objects
+    #:resume-class-objects
     
     ;;wrapper stuff
     #:com-wrapper-class
