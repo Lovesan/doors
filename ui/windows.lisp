@@ -759,7 +759,7 @@
   (item-text-size uint :optional 256))
 
 (define-external-function
-    ("GetAncestor" ancestor)
+    ("GetAncestor" window-ancestor)
     (:stdcall user32)
   (handle)
   "Retrieves the handle to the ancestor of the specified window."
@@ -838,7 +838,7 @@
        :optional :next))
 
 (define-external-function
-    ("GetParent" parent)
+    ("GetParent" window-parent)
     (:stdcall user32)
   ((last-error handle))
   "Retrieves a handle to the specified window's parent or owner."

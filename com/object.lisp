@@ -263,6 +263,10 @@
   (bt:with-lock-held (*mta-post-mortem-lock*)
     (push (list (lambda ()
                   (bt:release-lock *mta-post-mortem-lock*)
+                  (external-function-call
+                    "CoUninitialize"
+                    ((:stdcall ole32)
+                     (void)))
                   (loop)))
           *mta-post-mortem-queue*)
     (bt:condition-notify *mta-post-mortem-condvar*))

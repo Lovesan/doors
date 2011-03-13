@@ -9,4 +9,5 @@ Here's the list of dependencies in no particular order:
         ** cffi http://common-lisp.net/project/cffi/
         ** babel http://common-lisp.net/project/babel/
     * trivial-garbage http://www.cliki.net/trivial-garbage
+    * bordeaux-threads http://common-lisp.net/project/bordeaux-threads/
     * closer-mop http://common-lisp.net/project/closer/closer-mop.html
