@@ -130,6 +130,13 @@
     #:facility-web-services
     #:facility-windows-defender
     #:facility-opc
+    #:facility-dsound
+    #:facility-d3d
+    #:facility-d3d10
+    #:facility-dxgi
+    #:facility-d3d11
+    #:facility-dwrite
+    #:facility-d2d
     
     #:make-hresult
     #:hresult-from-win32

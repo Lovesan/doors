@@ -77,7 +77,14 @@
   :sdiag
   :web-services
   (:windows-defender 80)
-  :opc)
+  :opc
+  (:d3d #x76)
+  (:dsound #x78)
+  (:d3d10 #x79)
+  (:dxgi #x7a)
+  (:d3d11 #x7c)
+  (:dwrite #x98)
+  (:d2d #x99))
 
 (declaim (inline make-hresult))
 (defun make-hresult (errorp facility code)
