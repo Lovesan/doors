@@ -272,6 +272,7 @@
     (bt:condition-notify *mta-post-mortem-condvar*))
   (bt:with-lock-held (*mta-post-mortem-lock*)
     (bt:destroy-thread *mta-post-mortem-thread*))
+  (setf *mta-post-mortem-thread* nil)
   (gc :full t)
   (values))
 

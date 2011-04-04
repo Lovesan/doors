@@ -51,7 +51,7 @@
   (:inproc                 #x3)
   (:local-server           #x4)
   (:remote-server          #x10)
-  (:server                 #x19)
+  (:server                 #x15)
   (:no-code-download       #x400)
   (:no-custom-marshal      #x1000)
   (:enable-code-download   #x2000)
@@ -62,7 +62,7 @@
   (:activate-32-bit-server #x40000)
   (:activate-64-bit-server #x80000)
   (:enable-cloaking        #x100000)
-  (:all                    #b11011)
+  (:all                    #x17)
   (:ps-dll                 #x80000000))
 
 (define-enum (com-init-flags
