@@ -43,6 +43,15 @@
 (closer-mop:defclass com-class (com-object standard-class)
   ((%clsid :initform nil :initarg :clsid)
    (%interfaces :initarg :interfaces :initform '())))
+
+(defun %clsid-from-string (string)
+  (declare (type string string))
+  (external-function-call
+    "CLSIDFromString"
+    ((:stdcall ole32)
+     (hresult rv id)
+     ((& wstring) str :aux string)
+     ((& guid :out) id :aux))))
   
 (closer-mop:defmethod shared-initialize :after
   ((class com-class) slot-names &rest initargs &key clsid interfaces &allow-other-keys)
@@ -61,12 +70,7 @@
     (setf (gethash (setf (slot-value class '%clsid)
                          (etypecase clsid
                            (guid clsid)
-                           (string (external-function-call
-                                     "CLSIDFromString"
-                                     ((:stdcall ole32)
-                                      (hresult rv id)
-                                      ((& wstring) str :aux clsid)
-                                      ((& guid :out) id :aux))))
+                           (string (%clsid-from-string clsid))
                            (symbol (let ((id (symbol-value clsid)))
                                      (check-type id clsid)
                                      id))
