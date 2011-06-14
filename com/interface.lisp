@@ -431,7 +431,7 @@
                    t)))
     (declare (dynamic-extent clsid-git iid-git))
     (setf *global-interface-table* (external-function-call
-                                     "CoCreateInstanceEx"
+                                     "CoCreateInstance"
                                      ((:stdcall ole32)
                                       (hresult rv git)
                                       ((& guid) clsid :aux clsid-git)
