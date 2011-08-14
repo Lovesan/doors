@@ -116,7 +116,16 @@
     #:unregister-class
     
     ;;windows
+    #:msg
+    #:make-msg
+    #:msg-hwnd
+    #:msg-message
+    #:msg-wparam
+    #:msg-lparam
+    #:msg-time
+    #:msg-pt
     #:dispatch-message
+    #:translate-message
     #:get-message
     #:post-quit-message
     
