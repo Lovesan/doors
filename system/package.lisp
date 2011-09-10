@@ -146,9 +146,10 @@
     #:hresult-code
 
     #:windows-condition
-    #:windows-condition-code
+    #:windows-condition-code    
 
     #:define-results
+    #:print-windows-condition
 
     #:windows-status
     #:windows-status-code

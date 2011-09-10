@@ -120,45 +120,55 @@
   ((code :initarg :code
          :accessor windows-condition-code
          :initform 0))
-  (:report (lambda (condition stream)
-             (let ((code (windows-condition-code condition)))
-               (format stream
-                       "Status: ~:[Success~;Failure~] ~_Facility: ~a ~_Code: ~4,'0X~:[~; ~_~:*~a~]"
-                       (hresult-error-p code)
-                       (if (logbitp 30 code)
-                         "NT"
-                         (hresult-facility code))
-                       (hresult-code code)
-                       (or (and (= code 1)
-                                "Successful but nonstandard completion of operation")
-                           (let ((code (if (eq :win32 (hresult-facility code))
-                                         (hresult-code code)
-                                         code)))
-                             (with-pointer (pp &0 'pointer)
-                               (when (/= 0 (external-function-call
-                                             #+doors.unicode "FormatMessageW"
-                                             #-doors.unicode "FormatMessageA"
-                                             ((:stdcall kernel32)
-                                              (dword)
-                                              (dword flags :aux #x1300)
-                                              (pointer source :aux)
-                                              (dword message-id :aux code)
-                                              (dword language-id :aux
-                                                     #+doors.unicode 0
-                                                     #-doors.unicode #x00000409)
-                                              (pointer buffer :aux pp)
-                                              (dword size :aux)
-                                              (pointer args :aux))))
-                                 (unwind-protect
-                                     (deref pp '(& tstring))
-                                   (external-function-call
-                                     "LocalFree"
-                                     ((:stdcall kernel32)
-                                      (void)
-                                      (pointer))
-                                     (deref pp '*))))))
-                           (gethash code *result-descriptions*)))
-               condition))))
+  (:report print-windows-condition))
+
+(defun print-windows-condition (condition &optional (stream *standard-output*))
+  (declare (type windows-condition condition)
+           (type stream stream))
+  (let ((code (windows-condition-code condition)))
+    (pprint-logical-block (stream nil)
+      (format stream "Status: ~:[Success~;Failure~]" (hresult-error-p code))
+      (pprint-newline :mandatory stream)
+      (format stream "Facility: ~a" (if (logbitp 30 code) "NT" (hresult-facility code)))
+      (pprint-newline :mandatory stream)
+      (format stream "Code: #x~4,'0X" (hresult-code code))
+      (let ((message (or (and (= code 1)
+                              "Successful but nonstandard completion of operation.")
+                         (let ((code (if (eq :win32 (hresult-facility code))
+                                       (hresult-code code)
+                                       code)))
+                           (with-pointer (pp &0 'pointer)
+                             (when (/= 0 (external-function-call
+                                           #+doors.unicode "FormatMessageW"
+                                           #-doors.unicode "FormatMessageA"
+                                           ((:stdcall kernel32)
+                                            (dword)
+                                            (dword flags :aux #x1300)
+                                            (pointer source :aux)
+                                            (dword message-id :aux code)
+                                            (dword language-id :aux
+                                                   #+doors.unicode 0
+                                                   #-doors.unicode #x00000409)
+                                            (pointer buffer :aux pp)
+                                            (dword size :aux)
+                                            (pointer args :aux))))
+                               (unwind-protect
+                                   (deref pp '(& tstring))
+                                 (external-function-call
+                                   "LocalFree"
+                                   ((:stdcall kernel32)
+                                    (void)
+                                    (pointer))
+                                   (deref pp '*))))))
+                         (gethash code *result-descriptions*))))
+        (unless (null message)
+          (pprint-newline :mandatory stream)
+          (with-input-from-string (in message)
+            (loop :for l = (read-line in nil nil)
+              :while l :do
+              (write-string l stream)
+              (pprint-newline :mandatory stream)))))))
+  condition)
 
 (defmacro define-results (name (&rest superclasses)
                                      (&rest slots)
