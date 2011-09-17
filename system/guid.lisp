@@ -205,10 +205,13 @@
                  "String must be of form \"{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}\""
                  s)
                (pprint-newline :mandatory s))
-             c)))
+             c))
+  (:documentation
+    "Signalled when GUID-FROM-STRING function recieves string of invalid format."))
 
 (defun string-from-guid (guid)
   (declare (type guid guid))
+  "Converts a GUID structure to its string representation."
   (external-function-call
     "StringFromGUID2"
     ((:stdcall ole32)
@@ -219,6 +222,7 @@
 
 (defun guid-from-string (string)
   (declare (type string string))
+  "Converts a string representation of GUID into GUID structure."
   (external-function-call
     "IIDFromString"
     ((:stdcall ole32)
@@ -228,3 +232,10 @@
                         :string string)))
      ((& wstring) string :aux string)
      ((& guid :out) guid :aux))))
+
+(define-external-function
+    ("CoCreateGuid" create-guid)
+    (:stdcall ole32)
+  (hresult rv guid)
+  "Creates a GUID, a unique 128-bit integer used for CLSIDs and interface identifiers. "
+  (guid (& guid :out) :aux))

@@ -273,7 +273,8 @@
     #:string-from-guid
     #:guid-from-string
     #:invalid-guid-format
-    #:invalid-guid-format-string    
+    #:invalid-guid-format-string
+    #:create-guid
     
     ;;handle stuff
     #:close-handle

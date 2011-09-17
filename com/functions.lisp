@@ -93,13 +93,6 @@
   "Closes the COM library on the current thread, unloads all DLLs loaded by the thread, frees any other resources that the thread maintains, and forces all RPC connections on the thread to close. ")
 
 (define-external-function
-    ("CoCreateGuid" create-guid)
-    (:stdcall ole32)
-  (hresult rv guid)
-  "Creates a GUID, a unique 128-bit integer used for CLSIDs and interface identifiers. "
-  (guid (& guid :out) :aux))
-
-(define-external-function
     ("CoTaskMemAlloc" task-mem-alloc)
     (:stdcall ole32)
   (pointer rv (if (or (&? rv) (zerop size))

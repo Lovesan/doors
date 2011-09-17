@@ -176,7 +176,6 @@
     #:create-com-instance
     #:initialize-com
     #:uninitialize-com
-    #:create-guid
     #:task-mem-alloc
     #:task-mem-realloc
     #:task-mem-free
