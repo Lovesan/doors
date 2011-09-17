@@ -266,11 +266,14 @@
     #:define-guid
     #:define-ole-guid
     #:with-guid-accessors
-    #:guid-equal
-    
+    #:guid-equal    
     #:uuid
     #:uuid-of
     #:uuid-null
+    #:string-from-guid
+    #:guid-from-string
+    #:invalid-guid-format
+    #:invalid-guid-format-string    
     
     ;;handle stuff
     #:close-handle

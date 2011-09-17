@@ -167,7 +167,7 @@
      (with-guid-accessors
          (dw w1 w2 b1 b2 b3 b4 b5 b6 b7 b8)
          (external-function-call
-           "CLSIDFromString"
+           "IIDFromString"
            ((:stdcall ole32)
             (hresult rv guid)
             ((& wstring))
@@ -191,3 +191,40 @@
   (if (constantp class)
     (uuid-of (eval class))
     form))
+
+(define-condition invalid-guid-format (windows-error)
+  ((%string :accessor invalid-guid-format-string
+            :initform ""
+            :initarg :string))
+  (:report (lambda (c s)
+             (pprint-logical-block (s nil)
+               (format s "~s is an invalid representation of GUID."
+                       (invalid-guid-format-string c))
+               (pprint-newline :mandatory s)
+               (write-string
+                 "String must be of form \"{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}\""
+                 s)
+               (pprint-newline :mandatory s))
+             c)))
+
+(defun string-from-guid (guid)
+  (declare (type guid guid))
+  (external-function-call
+    "StringFromGUID2"
+    ((:stdcall ole32)
+     (int rv buffer)
+     ((& guid) guid :aux guid)
+     ((& wstring :out) buffer :aux (make-string 38))
+     (int cch :aux 39))))
+
+(defun guid-from-string (string)
+  (declare (type string string))
+  (external-function-call
+    "IIDFromString"
+    ((:stdcall ole32)
+     (dword rv (if (zerop rv)
+                 guid
+                 (error 'invalid-guid-format
+                        :string string)))
+     ((& wstring) string :aux string)
+     ((& guid :out) guid :aux))))
