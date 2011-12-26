@@ -116,7 +116,7 @@
   (data-buffer pointer)
   (buffer-size (& dword :inout)))
 
-#-win2000
+#-(or win2000 winxp winserver2003 winhomeserver)
 (define-external-function
     (#+doors.unicode "RegGetValueW"
      #-doors.unicode "RegGetValueA"

@@ -1137,6 +1137,7 @@
   "Changes the default layout when windows are created with no parent or owner only for the currently running process."
   (default-layout (boolean dword)))
 
+#-(or win2000 winxp winxp64 winserver2003 winhomeserver)
 (define-external-function
     ("SetProcessDPIAware" set-process-dpi-aware)
     (:stdcall user32)

@@ -653,7 +653,7 @@
 #-win2000
 (define-symbol-macro current-console-font (current-console-font))
 
-#-win2000
+#-(or win2000 winxp winxp64 winserver2003 winhomeserver)
 (define-external-function
     ("GetCurrentConsoleFontEx" current-console-font*)
     (:stdcall kernel32)
@@ -663,7 +663,7 @@
   (maximum-window-size bool :optional)
   (info (& console-font-info* :out) :aux))
 
-#-win2000
+#-(or win2000 winxp winxp64 winserver2003 winhomeserver)
 (define-symbol-macro current-console-font* (current-console-font*))
 
 (define-external-function
