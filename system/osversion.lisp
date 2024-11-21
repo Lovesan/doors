@@ -122,6 +122,16 @@
                   (1 (if (member :workstation (osverinfo-product-type info))
                        :win7
                        :winserver2008r2))
+                  (2 (if (member :workstation (osverinfo-product-type info))
+                       :win8
+                       :winserver2012))
+                  (3 (if (member :workstation (osverinfo-product-type info))
+                       :win8.1
+                       :winserver2012r2))
                   (T :windows)))
+             (10 (case (osverinfo-minor-version info)
+                   (0 (if (member :workstation (osverinfo-product-type info))
+                        :win10
+                        :winserver2016))))
              (T (error "Unsupported system")))
            *features*))
