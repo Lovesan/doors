@@ -144,7 +144,7 @@
   (:null #x0000)
   (:parent-notify #x0210)
   (:query-drag-icon #x0037)
-  (:query-open #x0013)  
+  (:query-open #x0013)
   (:quit #x0012)
   (:queue-sync #x0023)
   (:show-window #x0018)
@@ -240,7 +240,7 @@
                                (&key max-size max-position
                                 min-track-size max-track-size)))
     "Contains information about a window's maximized size and position and its minimum and maximum tracking size."
-  (reserved point)  
+  (reserved point)
   (max-size point)
   (max-position point)
   (min-track-size point)
@@ -564,7 +564,7 @@
   (action (enum (:base-type dword)
             :reset
             :allow
-            :disallow))  
+            :disallow))
   (change-filter-struct (& change-filter-struct :inout t) :optional))
 
 (define-external-function
@@ -652,36 +652,36 @@
 (define-external-function
     ("DeferWindowPos")
     (:stdcall user32)
-  ((last-error handle))
-  "Updates the specified multiple-window – position structure for the specified window."
+    ((last-error handle))
+  "Updates the specified multiple-window position structure for the specified window."
   (pos-info handle)
   (hwnd handle)
   (insert-after (union ()
-                  (handle handle)
-                  (enum (enum (:base-type int-ptr)
-                          (:bottom 1)
-                          (:no-topmost -2)
-                          (:top 0)
-                          (:topmost -1))))
+                       (handle handle)
+                       (enum (enum (:base-type int-ptr)
+                                   (:bottom 1)
+                                   (:no-topmost -2)
+                                   (:top 0)
+                                   (:topmost -1))))
                 :optional)
   (x int)
   (y int)
   (cx int)
   (cy int)
   (flags (enum (:base-type uint :list t)
-           (:draw-frame #x0020)
-           (:frame-changed #x0020)
-           (:hide-window #x0080)
-           (:no-activate #x0010)
-           (:no-copy-bits #x0100)
-           (:no-move #x0002)
-           (:no-owner-z-order #x0200)
-           (:no-redraw #x0008)
-           (:no-reposition #x0200)
-           (:no-send-changing #x0400)
-           (:no-size #x0001)
-           (:no-z-order #x0004)
-           (:show-window #x0040))))
+               (:draw-frame #x0020)
+               (:frame-changed #x0020)
+               (:hide-window #x0080)
+               (:no-activate #x0010)
+               (:no-copy-bits #x0100)
+               (:no-move #x0002)
+               (:no-owner-z-order #x0200)
+               (:no-redraw #x0008)
+               (:no-reposition #x0200)
+               (:no-send-changing #x0400)
+               (:no-size #x0001)
+               (:no-z-order #x0004)
+               (:show-window #x0040))))
 
 (define-external-function
     ("DestroyWindow" (:camel-case))
@@ -951,7 +951,7 @@
                    window-text-length)
     (:stdcall user32)
   (int)
-  "Retrieves the length, in characters, of the specified window's title bar text (if the window has a title bar)." 
+  "Retrieves the length, in characters, of the specified window's title bar text (if the window has a title bar)."
   (hwnd handle))
 
 (define-external-function
@@ -1477,7 +1477,7 @@
   (dword rv (if (zerop rv)
               nil
               (translate rv '(enum (:base-type dword :list t)
-                              (:callback #x00000004)                              
+                              (:callback #x00000004)
                               (:notify #x00000002)
                               (:replied #x00000008)
                               (:send #x00000001)))))
@@ -1647,4 +1647,3 @@
     (:stdcall user32)
   ((last-error bool))
   "Yields control to other threads when a thread has no other messages in its message queue.")
-
